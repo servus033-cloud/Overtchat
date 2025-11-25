@@ -343,15 +343,17 @@ install() {
         # On marque l'installation comme complète
         rm -f "/tmp/.install_overtchat"
         echo "install_complete=1" >>"/tmp/.install_overtchat"
-        rm -f $0
+
         # On execute le script setup-overtchat.sh
         bash "$APP_DIR/Service-Overtchat/Lib/setup-overtchat.sh"
+        
+        rm -f $0
         exit 0
     fi
 
     # Sinon → on met à jour
-    cd "$APP_DIR" || {
-        echo "Impossible d'accéder au dossier $APP_DIR"
+    cd "$APP_DIR/Service-Overtchat" || {
+        echo "Impossible d'accéder au dossier $APP_DIR/Service-Overtchat"
         exit 1
     }
 
