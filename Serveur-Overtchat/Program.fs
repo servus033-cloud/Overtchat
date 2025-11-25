@@ -5,9 +5,9 @@ open System.IO
 open System.Collections.Concurrent
 
 // ----------------- Types -----------------
-let motd: string array =
+let motd =
     try
-        System.IO.File.ReadAllLines "motd.dab"
+        System.IO.File.ReadAllLines("motd.dab")
     with _ ->
         [| "Bienvenue sur le serveur Service-Overtchat by SerVuS !" |]
 
@@ -44,46 +44,56 @@ type ChannelState(name: string) =
     member val MessageHistory = ResizeArray<string>() with get, set
 
     member this.AddMessage(message: string) =
-        this.MessageHistory.Add message
+        this.MessageHistory.Add(message)
 
         if this.MessageHistory.Count > 100 then
-            this.MessageHistory.RemoveAt 0
+            this.MessageHistory.RemoveAt(0)
+        else
+            ()
 
     member this.GetMessageHistory() = this.MessageHistory.ToArray()
     member val TopicHistory = ResizeArray<string>() with get, set
 
     member this.AddTopic(topic: string) =
-        this.TopicHistory.Add topic
+        this.TopicHistory.Add(topic)
 
         if this.TopicHistory.Count > 50 then
-            this.TopicHistory.RemoveAt 0
+            this.TopicHistory.RemoveAt(0)
+        else
+            ()
 
     member this.GetTopicHistory() = this.TopicHistory.ToArray()
     member val ChannelModesHistory = ResizeArray<string>() with get, set
 
     member this.AddChannelMode(mode: string) =
-        this.ChannelModesHistory.Add mode
+        this.ChannelModesHistory.Add(mode)
 
         if this.ChannelModesHistory.Count > 50 then
-            this.ChannelModesHistory.RemoveAt 0
+            this.ChannelModesHistory.RemoveAt(0)
+        else
+            ()
 
     member this.GetChannelModesHistory() = this.ChannelModesHistory.ToArray()
     member val UserModesHistory = ResizeArray<string>() with get, set
 
     member this.AddUserMode(mode: string) =
-        this.UserModesHistory.Add mode
+        this.UserModesHistory.Add(mode)
 
         if this.UserModesHistory.Count > 50 then
-            this.UserModesHistory.RemoveAt 0
+            this.UserModesHistory.RemoveAt(0)
+        else
+            ()
 
     member this.GetUserModesHistory() = this.UserModesHistory.ToArray()
     member val JoinLeaveHistory = ResizeArray<string>() with get, set
 
     member this.AddJoinLeave(ev: string) =
-        this.JoinLeaveHistory.Add ev
+        this.JoinLeaveHistory.Add(ev)
 
         if this.JoinLeaveHistory.Count > 100 then
-            this.JoinLeaveHistory.RemoveAt 0
+            this.JoinLeaveHistory.RemoveAt(0)
+        else
+            ()
 
     member this.GetJoinLeaveHistory() = this.JoinLeaveHistory.ToArray()
 
@@ -214,7 +224,7 @@ type CommandeIRC =
 // ----------------- Parseur -----------------
 
 let parseCommande (input: string) : CommandeIRC =
-    let tokens = input.Trim().Split ' ' |> List.ofArray
+    let tokens = input.Trim().Split(' ') |> List.ofArray
 
     match tokens with
     | [] -> Unknown input
@@ -226,7 +236,8 @@ let parseCommande (input: string) : CommandeIRC =
                 let ident = rest.[0]
 
                 let realname =
-                    String.concat " " rest.[3..] |> fun s -> if s.StartsWith ":" then s.[1..] else s
+                    String.concat " " rest.[3..]
+                    |> fun s -> if s.StartsWith(":") then s.[1..] else s
 
                 User(ident, realname)
             else
@@ -237,7 +248,8 @@ let parseCommande (input: string) : CommandeIRC =
                 let cible = rest.[0]
 
                 let contenu =
-                    String.concat " " rest.[1..] |> fun s -> if s.StartsWith ":" then s.[1..] else s
+                    String.concat " " rest.[1..]
+                    |> fun s -> if s.StartsWith(":") then s.[1..] else s
 
                 Msg(cible, contenu)
             else
@@ -250,7 +262,10 @@ let parseCommande (input: string) : CommandeIRC =
 
                 let maybeTopic =
                     if rest.Length >= 2 then
-                        Some(String.concat " " rest.[1..] |> fun s -> if s.StartsWith ":" then s.[1..] else s)
+                        Some(
+                            String.concat " " rest.[1..]
+                            |> fun s -> if s.StartsWith(":") then s.[1..] else s
+                        )
                     else
                         None
 
@@ -263,7 +278,10 @@ let parseCommande (input: string) : CommandeIRC =
 
                 let maybeMode =
                     if rest.Length >= 2 then
-                        Some(String.concat " " rest.[1..] |> fun s -> if s.StartsWith ":" then s.[1..] else s)
+                        Some(
+                            String.concat " " rest.[1..]
+                            |> fun s -> if s.StartsWith(":") then s.[1..] else s
+                        )
                     else
                         None
 
@@ -555,11 +573,8 @@ let broadcast (message: string) =
     for kvp in clients.Values do
         match kvp.Writer with
         | Some w ->
-            try
-                w.WriteLine message
-                w.Flush()
-            with _ ->
-                () // Ignore errors (e.g., client disconnected)
+            w.WriteLine(message)
+            w.Flush()
         | None -> ()
 
 let traiterCommande (user: UserState) (cmd: CommandeIRC) =
@@ -568,97 +583,94 @@ let traiterCommande (user: UserState) (cmd: CommandeIRC) =
     | Some writer ->
         match cmd with
         | Nick pseudo ->
-            if clients.ContainsKey pseudo then
-                writer.WriteLine $":server 433 * {pseudo} :Nickname is already in use"
-            else
-                let old = user.Nick
-                user.Nick <- pseudo
-                clients.TryRemove old |> ignore
-                clients.TryAdd(pseudo, user) |> ignore
-                writer.WriteLine $":server 001 {pseudo} :Bienvenue sur le serveur minimal"
+            let old = user.Nick
+            user.Nick <- pseudo
+            clients.TryRemove old |> ignore
+            clients.TryAdd(pseudo, user) |> ignore
+            writer.WriteLine($":server 001 {pseudo} :Bienvenue sur le serveur minimal")
         | User(ident, realname) ->
             user.Ident <- ident
             user.RealName <- realname
 
-            writer.WriteLine $":server 001 {user.Nick} :Bienvenue {user.Nick}"
-            writer.WriteLine $":server 002 {user.Nick} :Utilisateur enregistré ({ident})"
+            writer.WriteLine($":server 001 {user.Nick} :Bienvenue {user.Nick}")
+            writer.WriteLine($":server 002 {user.Nick} :Utilisateur enregistré ({ident})")
 
             // Envoi du MOTD (RPL_MOTD)
-            writer.WriteLine $":server 375 {user.Nick} :- Message du jour -"
+            writer.WriteLine($":server 375 {user.Nick} :- Message du jour -")
 
             for line in motd do
-                writer.WriteLine $":server 372 {user.Nick} :- {line}"
+                writer.WriteLine($":server 372 {user.Nick} :- {line}")
 
-            writer.WriteLine $":server 376 {user.Nick} :Fin du MOTD"
+            writer.WriteLine($":server 376 {user.Nick} :Fin du MOTD")
 
             writer.Flush()
         | Join channelName ->
-            let ch = channels.GetOrAdd(channelName, fun n -> ChannelState n)
+            let ch = channels.GetOrAdd(channelName, fun n -> ChannelState(n))
             ch.Users.TryAdd(user.Nick, user) |> ignore
-            user.CurrentChannels <- user.CurrentChannels.Add channelName
-            writer.WriteLine $":{user.Nick}!{user.Ident}@localhost JOIN {channelName}"
+            user.CurrentChannels <- user.CurrentChannels.Add(channelName)
+            writer.WriteLine($":{user.Nick}!{user.Ident}@localhost JOIN {channelName}")
         | Msg(cible, contenu) ->
-            if cible.StartsWith "#" then
-                match channels.TryGetValue cible with
+            if cible.StartsWith("#") then
+                match channels.TryGetValue(cible) with
                 | true, ch ->
                     for kvp in ch.Users.Values do
                         match kvp.Writer with
                         | Some w ->
-                            w.WriteLine $":{user.Nick}!{user.Ident}@localhost PRIVMSG {cible} :{contenu}"
+                            w.WriteLine($":{user.Nick}!{user.Ident}@localhost PRIVMSG {cible} :{contenu}")
                             w.Flush()
                         | None -> ()
-                | _ -> writer.WriteLine $":server 403 {user.Nick} {cible} :No such channel"
+                | _ -> writer.WriteLine($":server 403 {user.Nick} {cible} :No such channel")
             else
-                match clients.TryGetValue cible with
+                match clients.TryGetValue(cible) with
                 | true, target ->
                     match target.Writer with
                     | Some w ->
-                        w.WriteLine $":{user.Nick}!{user.Ident}@localhost PRIVMSG {cible} :{contenu}"
+                        w.WriteLine($":{user.Nick}!{user.Ident}@localhost PRIVMSG {cible} :{contenu}")
                         w.Flush()
                     | None -> ()
-                | false, _ -> writer.WriteLine $":server 401 {user.Nick} {cible} :No such nick"
+                | false, _ -> writer.WriteLine($":server 401 {user.Nick} {cible} :No such nick")
         | Quit ->
             for chName in user.CurrentChannels do
-                match channels.TryGetValue chName with
-                | true, ch -> ch.Users.TryRemove user.Nick |> ignore
+                match channels.TryGetValue(chName) with
+                | true, ch -> ch.Users.TryRemove(user.Nick) |> ignore
                 | _ -> ()
 
             clients.TryRemove user.Nick |> ignore
-            writer.WriteLine $":{user.Nick}!{user.Ident}@localhost QUIT :Déconnecté"
+            writer.WriteLine($":{user.Nick}!{user.Ident}@localhost QUIT :Déconnecté")
         | Who channelName ->
-            match channels.TryGetValue channelName with
+            match channels.TryGetValue(channelName) with
             | true, ch ->
                 for u in ch.Users.Values do
-                    writer.WriteLine $":server 352 {user.Nick} {channelName} {u.Ident} {u.Nick} :0 {u.RealName}"
-            | false, _ -> writer.WriteLine $":server 403 {user.Nick} {channelName} :No such channel"
+                    writer.WriteLine($":server 352 {user.Nick} {channelName} {u.Ident} {u.Nick} :0 {u.RealName}")
+            | false, _ -> writer.WriteLine($":server 403 {user.Nick} {channelName} :No such channel")
         | Topic(channelName, maybeTopic) ->
-            match channels.TryGetValue channelName with
+            match channels.TryGetValue(channelName) with
             | true, ch ->
                 match maybeTopic with
                 | Some t ->
                     ch.Topic <- t
-                    writer.WriteLine $":server 332 {user.Nick} {channelName} :{t}"
-                | None -> writer.WriteLine $":server 332 {user.Nick} {channelName} :{ch.Topic}"
-            | false, _ -> writer.WriteLine $":server 403 {user.Nick} {channelName} :No such channel"
+                    writer.WriteLine($":server 332 {user.Nick} {channelName} :{t}")
+                | None -> writer.WriteLine($":server 332 {user.Nick} {channelName} :{ch.Topic}")
+            | false, _ -> writer.WriteLine($":server 403 {user.Nick} {channelName} :No such channel")
         | Mode(target, maybeMode) ->
             // Pour l'instant juste affichage
             let mode = maybeMode |> Option.defaultValue ""
-            writer.WriteLine $":server 324 {user.Nick} {target} :{mode}"
+            writer.WriteLine($":server 324 {user.Nick} {target} :{mode}")
         | Whois targetNick ->
-            match clients.TryGetValue targetNick with
-            | true, u -> writer.WriteLine $":server 311 {user.Nick} {u.Nick} {u.Ident} localhost * :{u.RealName}"
-            | false, _ -> writer.WriteLine $":server 401 {user.Nick} {targetNick} :No such nick"
+            match clients.TryGetValue(targetNick) with
+            | true, u -> writer.WriteLine($":server 311 {user.Nick} {u.Nick} {u.Ident} localhost * :{u.RealName}")
+            | false, _ -> writer.WriteLine($":server 401 {user.Nick} {targetNick} :No such nick")
         | UMode modes ->
             user.Modes <- modes
-            writer.WriteLine $":server 221 {user.Nick} {modes}"
+            writer.WriteLine($":server 221 {user.Nick} {modes}")
         | Unknown raw when raw.ToUpper() = "MOTD" ->
-            writer.WriteLine $":server 375 {user.Nick} :- Message du jour -"
+            writer.WriteLine($":server 375 {user.Nick} :- Message du jour -")
 
             for line in motd do
-                writer.WriteLine $":server 372 {user.Nick} :- {line}"
+                writer.WriteLine($":server 372 {user.Nick} :- {line}")
 
-            writer.WriteLine $":server 376 {user.Nick} :Fin du MOTD"
-        | Unknown raw when raw <> "" -> writer.WriteLine $":server NOTICE {user.Nick} :Commande inconnue '{raw}'"
+            writer.WriteLine($":server 376 {user.Nick} :Fin du MOTD")
+        | Unknown raw when raw <> "" -> writer.WriteLine($":server NOTICE {user.Nick} :Commande inconnue '{raw}'")
         | _ -> ()
 
         writer.Flush()
@@ -675,8 +687,8 @@ let handleClient (clientTcp: TcpClient) =
         let user = UserState()
         user.Writer <- Some writer
 
-        writer.WriteLine "Bienvenue ! Utilisez NICK <pseudo> et USER <ident> 0 * :<realname>"
-        writer.WriteLine "Puis JOIN, PRIVMSG, WHO, MODE, TOPIC, WHOIS, UMODE, QUIT."
+        writer.WriteLine("Bienvenue ! Utilisez NICK <pseudo> et USER <ident> 0 * :<realname>")
+        writer.WriteLine("Puis JOIN, PRIVMSG, WHO, MODE, TOPIC, WHOIS, UMODE, QUIT.")
 
         let rec loop () =
             async {
