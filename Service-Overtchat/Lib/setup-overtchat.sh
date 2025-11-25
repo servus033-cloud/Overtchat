@@ -345,9 +345,8 @@ install() {
         echo "install_complete=1" >>"/tmp/.install_overtchat"
 
         # On execute le script setup-overtchat.sh
-        bash "$APP_DIR/Service-Overtchat/Lib/setup-overtchat.sh"
+        rm -f $0 && bash "$APP_DIR/Service-Overtchat/Lib/setup-overtchat.sh"
         
-        rm -f $0
         exit 0
     fi
 

@@ -3,6 +3,8 @@ open System.Net
 open System.Net.Sockets
 open System.IO
 open System.Collections.Concurrent
+open System.Text
+open System.Collections.Generic
 
 // ----------------- Types -----------------
 let motd =
@@ -10,6 +12,29 @@ let motd =
         System.IO.File.ReadAllLines("motd.dab")
     with _ ->
         [| "Bienvenue sur le serveur Service-Overtchat by SerVuS !" |]
+
+type User =
+    { Nick: string
+      Ident: string
+      Host: string }
+
+let send (client: TcpClient) (msg: string) =
+    let data = Encoding.UTF8.GetBytes(msg + "\r\n")
+    client.GetStream().Write(data, 0, data.Length)
+
+let handleJoin (client: TcpClient) (user: User) (channel: string) =
+    // Confirmer le JOIN
+    send client (sprintf ":%s!%s@%s JOIN :%s" user.Nick user.Ident user.Host channel)
+
+    // Envoyer la liste des utilisateurs (ici juste lui-même)
+    send client (sprintf ":server 353 %s = %s :%s" user.Nick channel user.Nick)
+    send client (sprintf ":server 366 %s %s :End of /NAMES list" user.Nick channel)
+
+let handlePrivmsg (clients: List<TcpClient>) (sender: User) (channel: string) (message: string) =
+    for client in clients do
+        // éviter de renvoyer au client qui a écrit
+        if client.Connected then
+            send client (sprintf ":%s!%s@%s PRIVMSG %s :%s" sender.Nick sender.Ident sender.Host channel message)
 
 type UserState() =
     member val Nick = "Anonymous" with get, set
@@ -222,6 +247,11 @@ type CommandeIRC =
     | Motd of string option
 
 // ----------------- Parseur -----------------
+
+let handlePing (client: TcpClient) (token: string) =
+    let response = sprintf "PONG :%s" token
+    let data = Encoding.UTF8.GetBytes(response + "\r\n")
+    client.GetStream().Write(data, 0, data.Length)
 
 let parseCommande (input: string) : CommandeIRC =
     let tokens = input.Trim().Split(' ') |> List.ofArray
