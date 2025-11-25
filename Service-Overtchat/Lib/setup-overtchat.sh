@@ -306,7 +306,7 @@ install() {
 
     # Initialisation du fichier temporaire
     >"/tmp/.install_overtchat"
-    printf "%s\n" "install_complete=0" >>"/tmp/.install_overtchat"
+    echo "install_complete=0" >>"/tmp/.install_overtchat"
 
     APP_DIR="$HOME"
     REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
@@ -340,7 +340,7 @@ install() {
         printf "%s\n" "Installation [ terminée ]"
         # On marque l'installation comme complète
         rm -f "/tmp/.install_overtchat"
-        printf "%s\n" "install_complete=1" >>"/tmp/.install_overtchat"
+        echo "install_complete=1" >>"/tmp/.install_overtchat"
         rm -f $0
         # On execute le script setup-overtchat.sh
         bash "$APP_DIR/Lib/setup-overtchat.sh"
