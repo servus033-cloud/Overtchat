@@ -185,14 +185,17 @@ funct_user() {
     if ! control_order "folders" "dir_lib" "Défaut variable Code" "049"; then
         return 1
     fi
+
     # On controle si dossier principale existe
     [[ ! -d "${folders[dir_lib]}" ]] && {
         printf "%s\n" "Dossier ${folders[dir_lib]} introuvable. Veuillez installer le programme d'abord."
         return 1
     }
+
     # valeur récupérée de façon sûre
     local libdir
     libdir="$(safe_assoc_get "folders" "dir_lib")"
+
     # si la valeur est vide (malgré control_order) on arrête
     if [[ -z "$libdir" ]]; then
         printf "%s\n" "Chemin du dossier Lib vide (Code erreur : 049)"
@@ -202,17 +205,48 @@ funct_user() {
     # On source le fichier user.sh
     if [[ -f "$HOME/$libdir/user.sh" ]]; then
         # shellcheck source=../Lib/user.sh
-        source "$HOME/$libdir/user.sh"
+        bash "$HOME/$libdir/user.sh"
     else
         printf "%s\n" "Fichier user.sh introuvable dans $HOME/$libdir. Veuillez installer le programme d'abord."
         return 1
     fi
     # On execute la fonction user_panel
-    user_panel
+    # user_panel
 }
 
 # Option 3
 check_updates() {
+    [[ ! -f "/tmp/.install_overtchat" ]] && {
+        printf "%s\n" "Installation non détectée. Veuillez installer le programme d'abord."
+        return 1
+    }
+
+    cat /tmp/.install_overtchat | grep -q "install_complete=1" || {
+        printf "%s\n" "Installation incomplète. Veuillez terminer l'installation avant de modifier les mises à jour."
+        return 1
+    }
+
+    # On regarde si le dossier Service-Overtchat existe
+    [[ ! -d "$HOME/Service-Overtchat" ]] && {
+        printf "%s\n" "Erreur : Dossier Service-Overtchat introuvable. Veuillez réinstaller le programme."
+        return 1
+    }
+
+    # On regarde si le fichier overtchat.conf existe
+    if [[ ! find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null ]]; then
+        printf "%s\n" "Erreur : Fichier de configuration introuvable. Veuillez réinstaller le programme."
+        return 1
+    fi
+
+    # On regarde si les declare sont chargés
+    if [[ compgen -A files &>/dev/null ]]; then
+        :
+    else
+        # On source le fichier overtchat.conf
+        # shellcheck source=../Conf/overtchat.conf
+        source "$HOME/Service-Overtchat/Conf/overtchat.conf"
+    fi
+
     if ! control_order "files" "conf" "Défaut variable Code" "049"; then
         return 1
     fi
@@ -226,14 +260,6 @@ check_updates() {
     if ! command -v git &>/dev/null; then
         echo "Git n'est pas installé. Impossible de mettre à jour."
         exit 1
-    fi
-
-    # Si le dossier n'existe pas, on clone le dépôt
-    if [[ ! -d "$APP_DIR" ]]; then
-        echo "Dossier $APP_DIR introuvable, clonage du dépôt..."
-        git clone -b $BRANCH "$REPO_URL" "$APP_DIR" || exit 1
-        echo "Installation terminée."
-        exit 0
     fi
 
     cd "$APP_DIR" || {
@@ -256,6 +282,7 @@ check_updates() {
         # ./start.sh
     else
         echo "Le programme est déjà à jour."
+        cd $HOME
     fi
 }
 
@@ -265,10 +292,12 @@ maj_updates() {
         printf "%s\n" "Installation non détectée. Veuillez installer le programme d'abord."
         return 1
     }
+
     cat /tmp/.install_overtchat | grep -q "install_complete=1" || {
         printf "%s\n" "Installation incomplète. Veuillez terminer l'installation avant de modifier les mises à jour."
         return 1
     }
+    
     if ! control_order "numeric" "update" "Défaut variable Code" "049"; then
         return 1
     fi
@@ -295,10 +324,18 @@ install() {
 
     # Contrôle si installation déjà faite
     
-    if [[ -d "$HOME/Service-Overtchat" ]]; then
+    [[ -d "$HOME/Service-Overtchat" ]] && {
         printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."; exit 1
-    fi
+    }
 
+    [[ -f "/tmp/.install_overtchat" ]] && {
+        cat /tmp/.install_overtchat | grep -q "install_complete=1" && {
+            printf "%s\n" "Installation déjà complète. Veuillez désinstaller avant de réinstaller."
+            exit 1
+        }
+    }
+
+    # Affichage du message d'installation
     mess_install
     
     if ! prompt_yn "Confirmez-vous le lancement de l'installation ? (Y/N) : "; then
@@ -309,18 +346,19 @@ install() {
     # Initialisation du fichier temporaire
     >"/tmp/.install_overtchat"
     echo "install_complete=0" >>"/tmp/.install_overtchat"
-
+    
+    # Depot GITHub
     APP_DIR="$HOME"
     REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
     BRANCH="main"
-
-    printf "%s\n" "Installation [ en cours... ]"
 
     # Vérifier si Git est installé
     if ! command -v git &>/dev/null; then
         printf "%s\n" "Git n'est pas installé. Impossible d'installer."
         exit 1
     fi
+
+    printf "%s\n" "Installation [ en cours... ]"
 
     # Si le dossier n'est pas un dépôt Git → on clone
     if [[ ! -d "$APP_DIR/.git" ]]; then
@@ -336,33 +374,19 @@ install() {
         # Nettoyer
         rm -rf "$TMP_DIR"
 
-        # On controle les fichier *.sh si mode +x
+        # On controle les fichier *.sh si mode +x sinon les activer
         find "$APP_DIR/Service-Overtchat/Lib/" -type f -name "*.sh" -exec chmod +x {} \;
+
         printf "%s\n" "Installation [ terminée ]"
 
         # On marque l'installation comme complète
         rm -f "/tmp/.install_overtchat"
         echo "install_complete=1" >>"/tmp/.install_overtchat"
 
-        # On execute le script setup-overtchat.sh
+        # On supprime l'archive et On execute le script setup-overtchat.sh dans le bon dossier pour finaliser l'installation
         rm -f $0 && bash "$APP_DIR/Service-Overtchat/Lib/setup-overtchat.sh"
-        
         exit 0
     fi
-
-    # Sinon → on met à jour
-    cd "$APP_DIR/Service-Overtchat" || {
-        echo "Impossible d'accéder au dossier $APP_DIR/Service-Overtchat"
-        exit 1
-    }
-
-    git fetch origin "$BRANCH"
-    git pull origin "$BRANCH"
-
-    printf "%s\n" "Installation [ terminée ]"
-    # On marque l'installation comme complète
-    rm -f "/tmp/.install_overtchat"
-    echo "install_complete=1" >>"/tmp/.install_overtchat"
 }
 
 # Option 6
@@ -397,6 +421,31 @@ setup_sql() {
                                         # === Menu principal === #
                                         ##########################
 
+[[ ! -f /tmp/.install_overtchat ]] && {
+    printf "%s\n" "Installation non détectée. Veuillez installer le programme."
+cat <<'PANEL'
+                        ──────────────────────────────
+                        |  Service-Overtchat - Panel  |
+                        ──────────────────────────────
+        0) Quitter le programme : Quitter le panel et revenir au terminal
+        5) Installer le programme Service-Overtchat : Lance le script d'installation complet
+PANEL
+}
+
+cat /tmp/.install_overtchat | grep -q "install_complete=1" || {
+    printf "%s\n" "Installation incomplète. Veuillez terminer l'installation avant d'accéder au panel."
+    cat <<'PANEL'
+                        ──────────────────────────────
+                        |  Service-Overtchat - Panel  |
+                        ──────────────────────────────
+        0) Quitter le programme : Quitter le panel et revenir au terminal
+        5) Installer le programme Service-Overtchat : Lance le script d'installation complet
+        6) Désinstaller le programme entièrement : Action irréversible
+PANEL
+}
+
+[[ -d "$HOME/Service-Overtchat" ]] && {
+    printf "%s\n" "Installation détectée. Accès au panel complet."
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
@@ -414,7 +463,7 @@ Veuillez faire vôtre choix :
         7) Installation/Paramètre MariaDB : Lance le script de configuration de la base de données MariaDB
 
 PANEL
-
+}
 
 panels_loop() {
     local choice
