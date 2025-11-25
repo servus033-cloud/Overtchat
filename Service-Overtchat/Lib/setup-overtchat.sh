@@ -14,7 +14,8 @@ fi
 clear
 
 # function declare
-declare -A conf 
+
+declare -A conf
 
 cat <<'LOGOS'
 
@@ -260,6 +261,14 @@ check_updates() {
 
 # Option 4
 maj_updates() {
+    [[ ! -f "/tmp/.install_overtchat" ]] && {
+        printf "%s\n" "Installation non détectée. Veuillez installer le programme d'abord."
+        return 1
+    }
+    cat /tmp/.install_overtchat | grep -q "install_complete=1" || {
+        printf "%s\n" "Installation incomplète. Veuillez terminer l'installation avant de modifier les mises à jour."
+        return 1
+    }
     if ! control_order "numeric" "update" "Défaut variable Code" "049"; then
         return 1
     fi
@@ -286,10 +295,7 @@ install() {
 
     # Contrôle si installation déjà faite
     
-    if [[ -d "$HOME/Service-Overtchat" ]]; then
-        printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."
-        exit 1
-    fi
+    [[ -d "$HOME/Service-Overtchat" ]] && printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."; exit 1
 
     mess_install
     
@@ -298,40 +304,62 @@ install() {
         exit 0
     fi
 
-    # Contrôle des dossiers sources
-    APP_DIR="$HOME/Service-Overtchat"
+    # Initialisation du fichier temporaire
+    >"/tmp/.install_overtchat"
+    printf "%s\n" "install_complete=0" >>"/tmp/.install_overtchat"
+
+    APP_DIR="$HOME"
     REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
     BRANCH="main"
 
-    if [[ ! -f "$APP_DIR/Unix.sh" ]]; then
+    printf "%s\n" "Installation [ en cours... ]"
 
-        printf "%s\n" "Installation [ en cours... ]"
+    # Vérifier si Git est installé
+    if ! command -v git &>/dev/null; then
+        printf "%s\n" "Git n'est pas installé. Impossible d'installer."
+        exit 1
+    fi
 
-        # Vérifier si Git est installé
-        if ! command -v git &>/dev/null; then
-            echo "Git n'est pas installé. Impossible d'installer."
-            exit 1
-        fi
+    # Si le dossier n'est pas un dépôt Git → on clone
+    if [[ ! -d "$APP_DIR/.git" ]]; then
+        printf "%s\n" "Clonage du dépôt..."
+        # Clone dans un dossier temporaire
+        TMP_DIR=$(mktemp -d)
+        git clone -b "$BRANCH" "$REPO_URL" "$TMP_DIR" || exit 1
+      
+        # Déplacer uniquement les dossiers voulus
+        mv "$TMP_DIR/Service-Overtchat" "$APP_DIR/"
+        mv "$TMP_DIR/Serveur-Overtchat" "$APP_DIR/"
+      
+        # Nettoyer
+        rm -rf "$TMP_DIR"
 
-        # Si le dossier n'est pas un dépôt Git → on clone
-        if [[ ! -d "$APP_DIR/.git" ]]; then
-            echo "Clonage du dépôt..."
-            git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || exit 1
-            echo "Installation terminée."
-            exit 0
-        fi
-
-        # Sinon → on met à jour
-        cd "$APP_DIR" || {
-            echo "Impossible d'accéder au dossier $APP_DIR"
-            exit 1
-        }
-
-        git fetch origin "$BRANCH"
-        git pull origin "$BRANCH"
+        # On controle les fichier *.sh si mode +x
+        find "$APP_DIR/Lib/" -type f -name "*.sh" -exec chmod +x {} \;
 
         printf "%s\n" "Installation [ terminée ]"
+        # On marque l'installation comme complète
+        rm -f "/tmp/.install_overtchat"
+        printf "%s\n" "install_complete=1" >>"/tmp/.install_overtchat"
+        rm -f $0
+        # On execute le script setup-overtchat.sh
+        bash "$APP_DIR/Lib/setup-overtchat.sh"
+        exit 0
     fi
+
+    # Sinon → on met à jour
+    cd "$APP_DIR" || {
+        echo "Impossible d'accéder au dossier $APP_DIR"
+        exit 1
+    }
+
+    git fetch origin "$BRANCH"
+    git pull origin "$BRANCH"
+
+    printf "%s\n" "Installation [ terminée ]"
+    # On marque l'installation comme complète
+    rm -f "/tmp/.install_overtchat"
+    echo "install_complete=1" >>"/tmp/.install_overtchat"
 }
 
 # Option 6
