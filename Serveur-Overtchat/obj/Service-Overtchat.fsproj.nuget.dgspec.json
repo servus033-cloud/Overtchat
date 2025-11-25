@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "F:\\Gauthier\\Programmation\\Serveur-Overtchat\\Service-Overtchat.fsproj": {}
+    "F:\\Gauthier\\Programmation\\Overtchat\\Serveur-Overtchat\\Service-Overtchat.fsproj": {}
   },
   "projects": {
-    "F:\\Gauthier\\Programmation\\Serveur-Overtchat\\Service-Overtchat.fsproj": {
+    "F:\\Gauthier\\Programmation\\Overtchat\\Serveur-Overtchat\\Service-Overtchat.fsproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\Gauthier\\Programmation\\Serveur-Overtchat\\Service-Overtchat.fsproj",
+        "projectUniqueName": "F:\\Gauthier\\Programmation\\Overtchat\\Serveur-Overtchat\\Service-Overtchat.fsproj",
         "projectName": "Service-Overtchat",
-        "projectPath": "F:\\Gauthier\\Programmation\\Serveur-Overtchat\\Service-Overtchat.fsproj",
+        "projectPath": "F:\\Gauthier\\Programmation\\Overtchat\\Serveur-Overtchat\\Service-Overtchat.fsproj",
         "packagesPath": "C:\\Users\\maver\\.nuget\\packages\\",
-        "outputPath": "F:\\Gauthier\\Programmation\\Serveur-Overtchat\\obj\\",
+        "outputPath": "F:\\Gauthier\\Programmation\\Overtchat\\Serveur-Overtchat\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -27,7 +27,7 @@
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "C:\\Program Files\\dotnet\\sdk\\10.0.100-rc.2.25502.107\\FSharp\\library-packs": {},
+          "C:\\Program Files\\dotnet\\sdk\\10.0.100\\FSharp\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -69,7 +69,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100-rc.2.25502.107/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
