@@ -295,7 +295,9 @@ install() {
 
     # Contrôle si installation déjà faite
     
-    [[ -d "$HOME/Service-Overtchat" ]] && printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."; exit 1
+    if [[ -d "$HOME/Service-Overtchat" ]]; then
+        printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."; exit 1
+    fi
 
     mess_install
     
@@ -335,9 +337,9 @@ install() {
         rm -rf "$TMP_DIR"
 
         # On controle les fichier *.sh si mode +x
-        find "$APP_DIR/Lib/" -type f -name "*.sh" -exec chmod +x {} \;
-
+        find "$APP_DIR/Service-Overtchat/Lib/" -type f -name "*.sh" -exec chmod +x {} \;
         printf "%s\n" "Installation [ terminée ]"
+
         # On marque l'installation comme complète
         rm -f "/tmp/.install_overtchat"
         echo "install_complete=1" >>"/tmp/.install_overtchat"

@@ -3,12 +3,15 @@
 // </auto-generated>
 namespace FSharp
 
+open System
+open System.Reflection
+
 
 [<assembly: System.Reflection.AssemblyCompanyAttribute("Service-Overtchat")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+168e4f7c1bae517ad320bd95e9462f23140819dd")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4cb82c6af11a1cb3cecd5ecfd6320c4aef7489cb")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("Service-Overtchat")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("Service-Overtchat")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]
-do ()
+do()
