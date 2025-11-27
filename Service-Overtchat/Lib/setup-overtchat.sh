@@ -139,7 +139,7 @@ control_order() {
         return 1
     }
 
-    if ! source "${files[conf]}" 2>/dev/null; then
+    if ! source "$HOME/${files[conf]}" 2>/dev/null; then
         printf "%s\n" "Impossible de charger le fichier de configuration : ${files[conf]}"
         return 1
     fi
@@ -305,10 +305,6 @@ check_updates() {
         # On source le fichier overtchat.conf
         # shellcheck source=../Conf/overtchat.conf
         source "$HOME/Service-Overtchat/Conf/overtchat.conf"
-    fi
-
-    if ! control_order "files" "conf" "Défaut variable Code" "049"; then
-        return 1
     fi
     
                                 # Mise à jour Git #
