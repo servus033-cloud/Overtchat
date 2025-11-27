@@ -480,7 +480,7 @@ setup_sql() {
                                         # === Menu principal === #
                                         ##########################
 
-[[ ! -f /tmp/.install_overtchat ]] && {
+[[ ! -f "/tmp/.install_overtchat" ]] && {
     printf "%s\n" "Installation non détectée. Veuillez installer le programme."
 cat <<'PANEL'
                         ──────────────────────────────
@@ -491,14 +491,14 @@ cat <<'PANEL'
 PANEL
 }
 
-[[ -f /tmp/.install_overtchat ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=1") && [[ ! -d "$HOME/Service-Overtchat" ]] && {
-    rm -f /tmp/.install_overtchat
+[[ -f "/tmp/.install_overtchat" ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=1") && [[ ! -d "$HOME/Service-Overtchat" ]] && {
+    rm -f "/tmp/.install_overtchat"
     printf "%s\n" "Installation incomplète détectée. Re-initialisation de l'install."
     bash $0
     exit 0
 }
 
-[[ -f /tmp/.install_overtchat ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=0") && {
+[[ -f "/tmp/.install_overtchat" ]] && $(cat "/tmp/.install_overtchat" | grep -q "install_complete=0") && {
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
@@ -509,12 +509,14 @@ cat <<'PANEL'
 PANEL
 }
 
-[[ -d "$HOME/Service-Overtchat" ]] && [[ -f /tmp/.install_overtchat ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=1") && {
+[[ -d "$HOME/Service-Overtchat" ]] && [[ -f "/tmp/.install_overtchat" ]] && $(cat "/tmp/.install_overtchat" | grep -q "install_complete=1") && {
     printf "%s\n" "Installation détectée. Accès au panel complet."
+    
     [[ $(find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null) ]] && {
         # shellcheck source=../Conf/overtchat.conf
         source "$HOME/Service-Overtchat/Conf/overtchat.conf"
     }
+    
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
