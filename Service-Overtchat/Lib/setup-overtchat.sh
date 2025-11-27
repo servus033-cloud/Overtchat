@@ -80,10 +80,70 @@ safe_assoc_get() {
 # control_order : vérifie l'existence d'une clé dans un tableau assoc, renvoie 0 si ok
 control_order() {
     # exemple: control_order "files" "logs" "Défaut variable" "049"
-    local arr_name="$1" key="$2" msg="${3:-Variable manquante}" code="${4:-000}"
-    eval '[[ -n ${'"$arr_name"'['"$key"']+_} ]]' && return 0
-    printf "%s\n" "$msg" "$code"
-    return 1
+    [[ ! $# -ge 2 ]] && {
+        printf "%s\n" "control_order: Nombre d'arguments insuffisant"
+        return 1
+    }
+
+    [[ ! $# -le 4 ]] && {
+        printf "%s\n" "control_order: Nombre d'arguments trop élevé"
+        return 1
+    }
+
+    [[ ! "$1" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] && {
+        printf "%s\n" "control_order: Nom de tableau invalide"
+        return 1
+    }
+
+    [[ ! "$2" =~ ^[a-zA-Z0-9_]+$ ]] && {
+        printf "%s\n" "control_order: Clé invalide"
+        return 1
+    }
+
+    [[ ! -z "${3:-}" ]] && [[ ! -z "${4:-}" ]] && {
+        if ! [[ "$4" =~ ^[0-9]{3}$ ]]; then
+            printf "%s\n" "control_order: Code erreur invalide"
+            return 1
+        fi
+    }
+
+    [[ -z "${3:-}" ]] && [[ ! -z "${4:-}" ]] && {
+        printf "%s\n" "control_order: Message d'erreur manquant"
+        return 1
+    }
+
+    [[ -z "${4:-}" ]] && [[ ! -z "${3:-}" ]] && {
+        printf "%s\n" "control_order: Code erreur manquant"
+        return 1
+    }
+
+    [[ ! "$(declare -p "$1" 2>/dev/null | grep 'declare -A')" ]] && {
+        printf "%s\n" "Tableau associatif '$1' introuvable"
+        return 1
+    }
+
+    [[ -z "$(eval "printf '%s\n' \"\${!$1[@]}\" | grep -w '^$2$'")" ]] && {
+        local msg="${3:-Variable manquante}" code="${4:-000}"
+        printf "%s\n" "$msg" "$code"
+        return 1
+    }
+
+    # On controle si le fichier source overtchat.conf est bien present pour prendre les variable et le charger
+    [[ "$(declare -p files 2>/dev/null | grep 'declare -A')" ]] || {
+        printf "%s\n" "Tableau associatif 'files' introuvable"
+        return 1
+    }
+   
+    [[ -v files[conf] ]] || {
+        printf "%s\n" "Clé 'conf' introuvable dans le tableau 'files'"
+        return 1
+    }
+
+    if ! source "${files[conf]}" 2>/dev/null; then
+        printf "%s\n" "Impossible de charger le fichier de configuration : ${files[conf]}"
+        return 1
+    fi
+    return 0
 }
 
                                         # ────────────────────────────── #
@@ -319,21 +379,20 @@ maj_updates() {
 
 # Option 5
 install() {
-    printf "%s\n" "L'installation va commencer. Veuillez suivre les instructions à l'écran."
-    prompt_continue
-
     # Contrôle si installation déjà faite
     
     [[ -d "$HOME/Service-Overtchat" ]] && {
-        printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."; exit 1
+        printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."; return 1
     }
 
     [[ -f "/tmp/.install_overtchat" ]] && {
         cat /tmp/.install_overtchat | grep -q "install_complete=1" && {
             printf "%s\n" "Installation déjà complète. Veuillez désinstaller avant de réinstaller."
-            exit 1
+            return 1
         }
     }
+    printf "%s\n" "L'installation va commencer. Veuillez suivre les instructions à l'écran."
+    prompt_continue
 
     # Affichage du message d'installation
     mess_install
@@ -445,6 +504,10 @@ PANEL
 
 [[ -d "$HOME/Service-Overtchat" ]] && [[ -f /tmp/.install_overtchat ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=1") && {
     printf "%s\n" "Installation détectée. Accès au panel complet."
+    [[ find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null ]] && {
+        # shellcheck source=../Conf/overtchat.conf
+        source "$HOME/Service-Overtchat/Conf/overtchat.conf"
+    }
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
