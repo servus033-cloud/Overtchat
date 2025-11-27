@@ -233,13 +233,13 @@ check_updates() {
     }
 
     # On regarde si le fichier overtchat.conf existe
-    if [[ ! find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null ]]; then
+    if [[ ! $(find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null) ]]; then
         printf "%s\n" "Erreur : Fichier de configuration introuvable. Veuillez réinstaller le programme."
         return 1
     fi
 
     # On regarde si les declare sont chargés
-    if [[ compgen -A files &>/dev/null ]]; then
+    if [[ $(compgen -A files &>/dev/null) ]]; then
         :
     else
         # On source le fichier overtchat.conf
@@ -432,9 +432,8 @@ cat <<'PANEL'
 PANEL
 }
 
-cat /tmp/.install_overtchat | grep -q "install_complete=1" || {
-    printf "%s\n" "Installation incomplète. Veuillez terminer l'installation avant d'accéder au panel."
-    cat <<'PANEL'
+[[ -f /tmp/.install_overtchat ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=0") && {
+cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
                         ──────────────────────────────
@@ -444,7 +443,7 @@ cat /tmp/.install_overtchat | grep -q "install_complete=1" || {
 PANEL
 }
 
-[[ -d "$HOME/Service-Overtchat" ]] && {
+[[ -d "$HOME/Service-Overtchat" ]] && [[ -f /tmp/.install_overtchat ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=1") && {
     printf "%s\n" "Installation détectée. Accès au panel complet."
 cat <<'PANEL'
                         ──────────────────────────────
