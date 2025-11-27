@@ -281,7 +281,7 @@ check_updates() {
         return 1
     }
 
-    cat /tmp/.install_overtchat | grep -q "install_complete=1" || {
+    cat "/tmp/.install_overtchat" | grep -q "install_complete=1" || {
         printf "%s\n" "Installation incomplète. Veuillez terminer l'installation avant de modifier les mises à jour."
         return 1
     }
@@ -311,19 +311,20 @@ check_updates() {
         return 1
     fi
     
+                                # Mise à jour Git #
     # Depot GITHub
-    APP_DIR="$HOME/Service-Overtchat"
-    REPO_URL="https://github.com/servus033-cloud/Overtchat/Overtchat.git"
-    BRANCH="main" # ou master selon ton dépôt
+    APP_DIR="$HOME/Service-Overtchat" # dossier index $HOME
+    REPO_URL="https://github.com/servus033-cloud/Overtchat/Overtchat.git" # dépot git
+    BRANCH="main" # ou master selon dépôt
 
     # Vérifier si Git est installé
     if ! command -v git &>/dev/null; then
-        echo "Git n'est pas installé. Impossible de mettre à jour."
+        printf "%s\n" "Git n'est pas installé. Impossible de mettre à jour."
         exit 1
     fi
 
     cd "$APP_DIR" || {
-        echo "Impossible d'accéder au dossier $APP_DIR"
+        printf "%s\n" "Impossible d'accéder au dossier $APP_DIR"
         exit 1
     }
 
@@ -333,13 +334,14 @@ check_updates() {
     REMOTE=$(git rev-parse origin/$BRANCH)
 
     if [[ "$LOCAL" != "$REMOTE" ]]; then
-        echo "Nouvelle version détectée ! Mise à jour en cours..."
+        printf "%s\n" "Nouvelle version détectée ! Mise à jour en cours..."
         git pull origin $BRANCH
-        echo "Mise à jour terminée."
+        printf "%s\n" "Mise à jour terminée."
 
         # Optionnel : relancer le programme
-        # pkill -f "nom_du_programme"
-        # ./start.sh
+        pkill -f "$0"
+        bash $0
+        exit 0
     else
         echo "Le programme est déjà à jour."
         cd $HOME
@@ -481,7 +483,7 @@ setup_sql() {
                                         ##########################
 
 [[ ! -f "/tmp/.install_overtchat" ]] && {
-    printf "%s\n" "Installation non détectée. Veuillez installer le programme."
+    printf "%s\n\n" "Installation non détectée. Veuillez installer le programme."
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
@@ -516,7 +518,7 @@ PANEL
         # shellcheck source=../Conf/overtchat.conf
         source "$HOME/Service-Overtchat/Conf/overtchat.conf"
     }
-    
+
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
