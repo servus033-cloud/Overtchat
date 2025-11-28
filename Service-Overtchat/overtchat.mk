@@ -22,7 +22,7 @@ REPO_BASE := Service-Overtchat
 LIB_SUB := $(REPO_BASE)/Lib
 CONF_SUB := $(REPO_BASE)/Conf
 UNIX_IRIX_SUB := $(REPO_BASE)/Unix/IriX
-SETUP_SCRIPT := $(REPO_BASE)/setup-overtchat.sh
+SETUP_SCRIPT := $(REPO_BASE)/Lib/setup-overtchat.sh
 
 # Dossier pour binaires chiffrés dans le package
 PKG_BIN := bin
@@ -64,7 +64,7 @@ encrypt: prepare_pack
 	@if ls "$(TMP_BUILD)/$(LIB_SUB)"/*.sh >/dev/null 2>&1; then \
 		for f in "$(TMP_BUILD)/$(LIB_SUB)"/*.sh; do \
 			name=$$(basename $$f .sh); \
-			out="$(TMP_BUILD)/$(PKG_BIN)/Lib_$$name"; \
+			out="$(TMP_BUILD)/$(PKG_BIN)/Lib/$$name"; \
 			echo " shc $$f -> $$out"; \
 			$(SHC) -f $$f -o "$$out" || (echo "shc failed for $$f" && exit 1); \
 			chmod +x "$$out" || true; \
@@ -76,7 +76,7 @@ encrypt: prepare_pack
 	@if ls "$(TMP_BUILD)/$(CONF_SUB)"/*.sh >/dev/null 2>&1; then \
 		for f in "$(TMP_BUILD)/$(CONF_SUB)"/*.sh; do \
 			name=$$(basename $$f .sh); \
-			out="$(TMP_BUILD)/$(PKG_BIN)/Conf_$$name"; \
+			out="$(TMP_BUILD)/$(PKG_BIN)/Conf/$$name"; \
 			echo " shc $$f -> $$out"; \
 			$(SHC) -f $$f -o "$$out" || (echo "shc failed for $$f" && exit 1); \
 			chmod +x "$$out" || true; \
@@ -95,7 +95,7 @@ encrypt: prepare_pack
 	fi
 	# IriX/installirix.sh
 	@if [ -f "$(TMP_BUILD)/$(UNIX_IRIX_SUB)/installirix.sh" ]; then \
-		out="$(TMP_BUILD)/$(PKG_BIN)/IriX_installirix"; \
+		out="$(TMP_BUILD)/$(PKG_BIN)/IriX/installirix"; \
 		echo " shc $(UNIX_IRIX_SUB)/installirix.sh -> $$out"; \
 		$(SHC) -f "$(TMP_BUILD)/$(UNIX_IRIX_SUB)/installirix.sh" -o "$$out" || (echo "shc failed for irix" && exit 1); \
 		chmod +x "$$out" || true; \
@@ -110,7 +110,13 @@ patch: encrypt
 	@if [ -x "$(TMP_BUILD)/tools/patch_calls.sh" ]; then \
 		bash "$(TMP_BUILD)/tools/patch_calls.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
 	else \
-		echo "   - tools/patch_calls.sh non présent ou non exécutable dans le repo cloné. Pas de patch automatique."; \
+		echo "$(TMP_BUILD)/tools/patch_calls.sh non présent ou non exécutable dans le repo cloné. Recherche en cours..."; \
+	fi
+
+	@if [ -x "tools/patch_calls.sh" ]; then \
+		bash "tools/patch_calls.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
+	else \
+		echo "tools/patch_calls.sh non présent ou non exécutable dans le repo cloné. Pas de patch automatique."; \
 	fi
 	@echo "Patch effectué (quand possible)"
 

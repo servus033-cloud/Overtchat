@@ -67,13 +67,13 @@ fi
 # IriX/installirix.sh
 if [ -f "$REPO_ROOT/Service-Overtchat/Unix/IriX/installirix.sh" ]; then
   rel="Service-Overtchat/Unix/IriX/installirix.sh"
-  echo "Mapping: $rel -> ${BIN_DIR_REL}/IriX_installirix"
-  patch_one "$rel" "IriX_installirix"
+  echo "Mapping: $rel -> ${BIN_DIR_REL}/IriX/installirix"
+  patch_one "$rel" "IriX/installirix"
 fi
 
 # setup-overtchat.sh
-if [ -f "$REPO_ROOT/Service-Overtchat/setup-overtchat.sh" ]; then
-  rel="Service-Overtchat/setup-overtchat.sh"
+if [ -f "$REPO_ROOT/Service-Overtchat/Lib/setup-overtchat.sh" ]; then
+  rel="Service-Overtchat/Lib/setup-overtchat.sh"
   echo "Mapping: $rel -> ${BIN_DIR_REL}/setup-overtchat"
   patch_one "$rel" "setup-overtchat"
 fi
