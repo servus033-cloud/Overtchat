@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Chargement Librairie Conf
 over_data="$HOME/Service-Overtchat/Conf/*"

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
                                         # ────────────────────────────────── #
                                         #   Création des fichiers Lib Shell
                                         # ────────────────────────────────── #

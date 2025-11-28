@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
                                         # ────────────────────────────────── #
                                         #   Création du fichier colors.conf

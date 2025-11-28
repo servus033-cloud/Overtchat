@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 if [[ "$1" != "" && "$1" == "--debug" ]]; then
     set -xeuo pipefail
