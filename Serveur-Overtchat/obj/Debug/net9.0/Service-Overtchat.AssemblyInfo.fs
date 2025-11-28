@@ -10,7 +10,7 @@ open System.Reflection
 [<assembly: System.Reflection.AssemblyCompanyAttribute("Service-Overtchat")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8bba3b0606d0d9250c69fa71fe04d9ea1cdb3f3a")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e7499bfc0d8b0c6835a42acc7eb3b8a1600c90d4")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("Service-Overtchat")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("Service-Overtchat")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]
