@@ -1,0 +1,260 @@
+										📌 NOTICE D'INSTALLATION ET DE FONCTIONNEMENT – SERVICE OVERTCHAT 📌
+
+# 📥 Date dernière mise à jour : 15/05/2025
+
+														🔹 PRÉSENTATION DU PROGRAMME 🔹
+Le programme `install_overtchat` est un script d'installation automatisé permettant aux utilisateurs d'installer facilement `Service Overtchat` sans nécessiter de connaissances en Bash avec ou sans les accès sudo/root.
+L'objectif est de simplifier le processus d'installation tout en garantissant une installation sécurisée et sans erreur.
+
+														🔹 FONCTIONNEMENT DU PROGRAMME 🔹
+Le programme `Service Overtchat` fonctionne sous Bash, et donc, fonctionnel seulement sur une plateforme dite < linux > ( debian, ubuntu, fedora, centos ... )
+	-> 📌 Dans les futurs versions, un installateur sera fonctionnel sous `Windows` ( voir Changelog )
+
+
+														🔹 INSTALLATION DU PROGRAMME 🔹
+
+-> 1 Téléchargement du script
+Vous devez récupérer le fichier `install_overtchat`. Si vous ne l'avez pas encore, voici comment le télécharger :
+
+# Utilisateur Expérimenté :
+📌 Commande Bash :
+    wget --quiet -O $HOME/install_overtchat http://service.overtchat.free.fr/overtchat/encrypt/install_overtchat
+
+# Utilisateur Débutant :
+📥 Lien Web :
+		-> http://service.overtchat.free.fr/
+		-> Ce rendre dans la partie Service-Overtchat
+		-> Cliquer sur ' Télécharger Programme Service-Overtchat '
+		-> Notice disponible sur ' Télécharger Notice Service-Overtchat '
+		
+
+📥 Pour lire la Notice en texte brut, télécharger ' Notepad++ ' et/ou pour ' Modifier ' le programme `Service Overtchat`
+	-> https://notepad-plus-plus.org/downloads/
+
+📜 Une version de la Notice est aussi en version `executable` pour Windows : http://service.overtchat.free.fr/overtchat/encrypt/NoticeOvertchat.exe
+
+
+-> 2 Rendre le script exécutable
+Avant de l’exécuter, assurez-vous qu'il est bien exécutable :
+
+    chmod +x $HOME/install_overtchat
+
+-> 3 Lancement du script
+Une fois prêt, vous pouvez lancer l’installation avec :
+
+    ./$HOME/install_overtchat
+			ou
+	bash $HOME/install_overtchat
+	
+Le script téléchargera automatiquement les dépendances nécessaires et procèdera à l’installation sans nécessiter d’intervention supplémentaire.
+
+
+														 🔹 FONCTIONNEMENT DU PROGRAMME 🔹
+
+## 📥 Processus d'installation
+1. Vérification des dépendances (`shc`, `gpg`, `mail`, `wget`, `chmod` etc...) Sans ces dépendances, le programme ne sera pas compatible !
+2. Téléchargement automatique des fichiers nécessaire au bon fonctionnement
+3. Validation que les fichiers ne soit pas corrompu ou vide
+4. Activation et exécution automatique des fichiers d'installations
+
+Si un problème survient, le script affichera un message clair pour aider l'utilisateur à corriger l'erreur.
+En cas de difficulté sur la ou les erreurs rencontrés et si il es impossible de résoudre personnelement, veuillez envoyer un message sur ' service.overtchat@free.fr ' en précisant les informations obtenues ( Voir section FAQ pour + de renseignements )
+
+
+												📌 CHRONOLOGIE DE DÉPLOIEMENT – SERVICE OVERTCHAT 📌
+
+-> 🔹 Étape 1 – Installation initiale (`install_overtchat`)
+✅ Création des répertoires nécessaires :
+   - `$HOME/Overtchat`
+   - `$HOME/Overtchat/build`
+   - `$HOME/Overtchat/files`
+   - `$HOME/Overtchat/src`
+   
+✅ Mise en place de la **base de données locale
+** (`$HOME/Overtchat/files/DATABASE`) et (`$HOME/Overtchat/files/LOGERROR`) **
+
+📥 Téléchargement de toutes les sources `build` et `src` pour le bon fonctionnement
+✅ Lancement automatisé pour l’installation complète du programme
+	- 📌 Les programmes mis dans le dossier `build` sont en maintenance/construction
+	- 📌 Les programmes mis dans le dossier `src` sont disponibles
+	
+
+-> 🔹 Étape 2️ – Installation des services
+✅ **Installation de tous les modules nécessaires**, incluant :
+   - `setup_overtchat`
+   - `irix`
+   - `unreal + logo`
+   - `overtchat`
+✅ Configuration des **modes exécutifs** pour chaque composant
+✅ Préparation du système pour une utilisation complète
+
+
+-> 🔹 Étape 3️ – Configuration avancée (`setup_overtchat`)
+✅ Interface interactive permettant **l’installation sur mesure**, avec :
+   - 📌 `eggdrop` (bot IRC)
+   - 📌 `serveur unreal ircd/ircu` (serveur IRC)
+   - 📌 `irix` en format **TCL/SQL**
+   - 📌 Autres programmes en développement
+✅ Sélection des **options spécifiques selon les besoins de l’utilisateur**
+✅ Adaptation à différents environnements et préférences d’installation
+
+
+-> 🔹 Étape 4️ – Mise en place de la licence
+✅ Activation officielle de la licence de **Service Overtchat**
+✅ Validation des droits et **conditions d’utilisation**
+✅ Protection et conformité aux termes de la **licence MIT**
+
+
+
+-> 🔹 Étape 5️ – Service de mise à jour intégrale
+✅ 📡 **Système de mise à jour centralisé** pour maintenir le programme à jour
+✅ Vérification et **correctifs** en fonction des nouvelles versions
+✅ Support des **fonctionnalités évolutives et améliorations**
+
+
+												📌 FUTURES AMÉLIORATIONS ET ÉVOLUTIONS – SERVICE OVERTCHAT 📌
+
+					## 🔹 Objectif des mises à jour 🔹 ##
+`Service Overtchat` évolue constamment afin d’offrir une **expérience toujours plus optimisée, intuitive et performante**.  
+Nous avons identifié plusieurs axes d’amélioration qui seront intégrés **dans les prochaines versions**.  
+
+
+					## 🔹 Améliorations techniques 🔹 ##
+✅ **Optimisation du script d’installation** pour une meilleure compatibilité avec divers systèmes  
+✅ **Ajout d’une vérification avancée des dépendances** avec gestion automatique des packages  
+✅ **Amélioration du système de logs** pour une meilleure visibilité des actions effectuées  
+
+
+					## 🔹 Nouvelles fonctionnalités prévues 🔹 ##
+🔜 **Ajout d’un mode interactif avancé dans `setup_overtchat`** pour guider l’utilisateur  
+🔜 **Support étendu des nouvelles versions de UnrealIRCd et Eggdrop**  
+🔜 **Déploiement d’une interface web pour simplifier la gestion des services **
+🔜 **Possibilité d’effectuer une mise à jour automatique sans réinstallation complète **
+
+
+					## 🔹 Sécurité et conformité 🔹 ##
+🔐 **Renforcement des mesures de sécurité** pour la protection des données utilisateur  
+📜 **Adaptation aux évolutions des licences et réglementations**  
+💡 **Ajout d’une option de sauvegarde et de récupération des configurations**  
+
+
+					## 🔹 Votre contribution 🔹 ##
+`Service Overtchat` est un projet évolutif : **vos suggestions sont précieuses** !  
+Si vous avez une idée d’amélioration ou souhaitez proposer une fonctionnalité, **contactez-nous à : service.overtchat@free.fr**  
+
+
+												🔐 CONCLUSION 🔐
+
+💡 Cette **chronologie de déploiement** permet une mise en place **progressive, fluide et sécurisée** de **Service Overtchat**.  
+💡 Ces améliorations permettront à Service Overtchat d’être encore plus **efficace, sécurisé et facile à utiliser**.  
+💡 Chaque étape est conçue pour **optimiser la gestion et l’installation**, garantissant une **expérience utilisateur intuitive et efficace**.  
+
+
+												🔹 COMMANDES UTILES 🔹
+
+### 📌 Contrôle du fichier `setup-overtchat` après installation
+Vous pouvez vérifier si le fichier `setup-overtchat` est bien présent avec :
+
+    ls -lh $HOME/Overtchat/build/*
+
+### 📌 Supprimer le fichier en cas d’échec
+Si vous souhaitez supprimer et recommencer l’installation :
+
+    rm -f $HOME/Overtchat/ ( Action irreversible ! Supprime l'intégralité des données )
+	wget --quiet -O $HOME/install_overtchat http://service.overtchat.free.fr/overtchat/encrypt/install_overtchat
+    chmod +x $HOME/install_overtchat
+	./install_overtchat ou bash install_overtchat
+
+### 📌 Voir les logs du programme
+Si vous souhaitez afficher les logs pour diagnostiquer un problème :
+
+    cat $HOME/Overtchat/files/LOGERROR
+					
+
+												🔹 RÉSOLUTION DES PROBLÈMES 🔹
+
+### ❌ Erreur : Fichier non trouvé
+Si le fichier `install_overtchat` n'est pas téléchargé, assurez-vous que vous avez une connexion internet et relancez :
+
+    wget --quiet -O $HOME/install_overtchat http://service.overtchat.free.fr/overtchat/encrypt/install_overtchat
+
+### ❌ Erreur : Programme manquant
+Si un package comme `wget`, `gpg`, ou `mail` n’est pas installé, installez-le manuellement en fonction de votre système.
+
+Exemple : installation de `wget` sur Debian/Ubuntu :
+
+    sudo apt install wget
+
+💡 Si vous n'avez pas accès à `sudo`, contactez l'administrateur système de vôtre hébergement.
+
+
+													🔹 SECTION FAQ 🔹
+
+### 🟢 QUESTIONS FRÉQUENTES (FAQ)  
+
+#### 🔹 Je souhaite modifier moi-même le programme avec mes connaissances, comment faire ?
+
+# 📌 MODIFICATION DU PROGRAMME
+
+## 🔹 Personnalisation et modification du programme
+Le programme `install_overtchat` ainsi que les programmes ce trouvant dans le dossier `build` ont été conçu pour offrir une installation simple et intuitive.  
+Toutefois, si vous souhaitez **modifier** ou **personnaliser** son fonctionnement en fonction de vos besoins, vous êtes libre de le faire.  
+
+💡 **Note importante :** Toute modification apportée au programme relève de votre responsabilité.  
+Le développeur **ne pourra être tenu responsable** en cas d’erreur, de dysfonctionnement ou de problème résultant d’une modification.  
+
+
+## 🔹 Avertissement sur la responsabilité
+En effectuant des modifications, vous acceptez que :  
+✅ Vous êtes seul responsable des éventuels **bugs ou dysfonctionnements** après modification.  
+✅ Aucune **assistance technique officielle** ne sera fournie pour les versions modifiées.  
+✅ Le programme d'origine a été testé et optimisé **sans garantie de compatibilité après modification**.  
+
+Si vous rencontrez un problème après avoir modifié le code, **vous devrez le résoudre par vos propres moyens**.
+
+
+## 🔹 Avertissement Importante MAJ
+❌ Le service de mise à jour installé dedans, est activé par défaut mais il peut être désactivé manuellement, car toute modification du code faite par vous sera automatiquement effacé après la mise à jour du programme.
+❌ Si l'option `DEV` est activé par vos soin, alors les mises à jours seront automatiquement désactivé.
+
+## 🔹 Obtenir la version non cryptée du programme
+Le programme est fourni sous une **forme cryptée** pour protéger son intégrité et garantir une distribution standardisée.
+Si vous souhaitez obtenir la **version non cryptée** du programme afin d’effectuer des modifications approfondies, vous devez en faire la demande **par email** à l’adresse suivante :
+
+## 🔹 Activation/Désactivation Option `DEV`
+En activant l'option `DEV` sur le programme, vous êtes seul responsable des éventuels **bugs ou dysfonctionnements** après modification.
+Cette option vous permet d'avoir le programme non crypté. Les mises à jours seront automatiquement désactivé et décryptera tout le programme actuel.
+
+❌ En désactivant l'option `DEV`, ceci entrainera une suppression totale de vos données et re-installera le programme crypté avec ses dernières mise à jours.
+
+### 🚀 Conclusion  
+La modification du programme est **possible**, mais **à vos risques et périls**.  
+
+			😃🔥 Bonne expérimentation et développement ! 😃🔥
+
+
+## 🔹 Comment contacter le developpeur du programme ?
+📌 Email : 📥 service.overtchat@free.fr + vôtre message
+📌 Attention : Tout les messages seront traiter avec leur niveau d'importance. ❌ Ne pas hésitez à signaler en sujet le niveau < faible | standard | critique > pour un traitement rapide ❌
+
+## 🔹 Comment installer Service Overtchat ?  
+💡 Téléchargez le script d'installation et exécutez-le :  
+
+Etape 1 : wget --quiet -O $HOME/install_overtchat http://service.overtchat.free.fr/overtchat/encrypt/install_overtchat
+Etape 2 : chmod +x install_overtchat
+Etape 3 : ./install_overtchat ou bash install_overtchat
+
+
+													 ## CONCLUSION ##
+Avec cette notice, n'importe quel utilisateur peut installer et utiliser le programme sans difficulté. Le système est conçu pour être intuitif et sans erreur.
+
+💡 Si vous souhaitez encore améliorer l’expérience utilisateur, n’hésitez pas à suggérer des fonctionnalités supplémentaires !
+
+																
+																Bonne installation ! 🎉
+
+
+											🔹 Programme protéger sous licence en version FR et EN 🔹
+															
+															# Copyright (c) 2025 SerVuS
+											# Sous licence MIT. Voir le fichier LICENCE pour plus d'informations.

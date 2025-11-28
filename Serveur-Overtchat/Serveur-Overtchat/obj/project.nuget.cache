@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "7G6vvrkQpF8=",
+  "success": true,
+  "projectFilePath": "F:\\Gauthier\\Programmation\\Overtchat\\Serveur-Overtchat\\Service-Overtchat.fsproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\maver\\.nuget\\packages\\fsharp.core\\9.0.100\\fsharp.core.9.0.100.nupkg.sha512"
+  ],
+  "logs": []
+}

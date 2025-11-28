@@ -7,7 +7,7 @@ SHELL := /bin/bash
 
 # -------- CONFIG ----------
 HOME := $(shell echo $$HOME)
-TMP_BUILD := $(PWD)/Overtchat
+TMP_BUILD := $(PWD)/.build_overtchat
 GIT_REPO := https://github.com/servus033-cloud/Overtchat.git
 GIT_BRANCH := main
 
