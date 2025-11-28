@@ -17,7 +17,7 @@ REPO_BASE     := Service-Overtchat
 LIB_SUB       := $(REPO_BASE)/Lib
 CONF_SUB      := $(REPO_BASE)/Conf
 BUILD_UNIX_IR := $(REPO_BASE)/Build/Unix/IriX
-SETUP_SRC     := $(REPO_BASE)/setup-overtchat.sh  # existe; ne sera pas appelé par d'autres scripts
+SETUP_SRC     := $(LIB_SUB)/setup-overtchat.sh  # existe; ne sera pas appelé par d'autres scripts
 
 # Emplacement des binaires dans le package (sous Service-Overtchat/bin/)
 PKG_BIN := bin
@@ -26,28 +26,33 @@ PKG_BIN := bin
 all: release
 
 clean:
-	@echo "🧹 Nettoyage temporaire"
+	@printf "%s\n" "Nettoyage temporaire"
 	@rm -rf "$(TMP_BUILD)" "$(OUT_DIR)"
-	@echo "✔ Nettoyage effectué"
+	@printf "%s\n" "Nettoyage effectué"
 
 mrproper: clean
-	@echo "🧹 Nettoyage complet"
+	@printf "%s\n" "Nettoyage complet"
 	@rm -rf "$(TMP_BUILD)" "$(OUT_DIR)"
-	@echo "✔ mrproper OK"
+	@printf "%s\n" "Nettoyage terminé"
 
 # 1) clone propre
 clone: clean
-	@echo "📥 Clonage de $(GIT_REPO) dans $(TMP_BUILD)"
+	@echo "Clonage de $(GIT_REPO) dans $(TMP_BUILD)"
 	@git clone -b $(GIT_BRANCH) $(GIT_REPO) "$(TMP_BUILD)" || (echo "Erreur: git clone a échoué" && exit 1)
-	@echo "✔ Dépôt cloné"
+	@printf "%s\n" "Dépôt cloné"
 
 # 2) préparation : vérifs + création dossiers bin
 prepare: clone
 	@command -v $(SHC) >/dev/null 2>&1 || (echo "Erreur: '$(SHC)' introuvable. Installe shc (apt install shc)"; exit 1)
+	@printf "%s\n" "Création des dossiers : en cours..."
+	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)"
 	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)/Lib"
-	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)/IriX"
 	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)/Conf"
-	@echo "✔ Préparation OK (bin dirs créés)"
+	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)/Eggdrop"
+	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)/Logs"
+	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)/Build/UniX/IriX"
+	@mkdir -p "$(TMP_BUILD)/$(PKG_BIN)/Build/Windows"
+	@printf "%s\n" "Création des dossiers : terminé"
 
 # Helper : ajoute temporairement shebang si absent (usé avant shc)
 define ensure_shebang_cmd
@@ -60,85 +65,85 @@ endef
 
 # 3) encrypt : shc pour Lib/*.sh, Conf/*.sh (si présents), Build/Unix/IriX/installirix.sh, setup-overtchat.sh
 encrypt: prepare
-	@echo "🔐 Démarrage chiffrement (shc)"
+	@printf "%s\n" "Démarrage chiffrement (shc)"
 	# Lib/*.sh
 	@if ls "$(TMP_BUILD)/$(LIB_SUB)"/*.sh >/dev/null 2>&1; then \
 	  for f in "$(TMP_BUILD)/$(LIB_SUB)"/*.sh; do \
 	    name=$$(basename $$f .sh); \
-	    out="$(TMP_BUILD)/$(PKG_BIN)/Lib/Lib_$$name"; \
-	    echo " -> $$f -> $$out"; \
+	    out="$(TMP_BUILD)/$(PKG_BIN)/Lib/$$name"; \
+	    printf "%s\n" "[build] $$f -> $$out"; \
 	    cp "$$f" "$$f.bak.$$"; \
 	    $(call ensure_shebang_cmd,$$f); \
-	    $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { echo "shc failed for $$f"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
+	    $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { printf "%s\n" "shc failed for $$f"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
 	    chmod +x "$$out" || true; \
 	    mv "$$f.bak.$$" "$$f" >/dev/null 2>&1 || true; \
 	  done; \
 	else \
-	  echo " - Aucun .sh dans $(LIB_SUB)"; \
+	  printf "%s\n" "Alerte > Aucun .sh dans $(LIB_SUB)"; \
 	fi
 	# Conf/*.sh (optionnel)
 	@if ls "$(TMP_BUILD)/$(CONF_SUB)"/*.sh >/dev/null 2>&1; then \
 	  for f in "$(TMP_BUILD)/$(CONF_SUB)"/*.sh; do \
 	    name=$$(basename $$f .sh); \
 	    out="$(TMP_BUILD)/$(PKG_BIN)/Conf/Conf_$$name"; \
-	    echo " -> $$f -> $$out"; \
+	    printf "%s\n" "[build] $$f -> $$out"; \
 	    cp "$$f" "$$f.bak.$$"; \
 	    $(call ensure_shebang_cmd,$$f); \
-	    $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { echo "shc failed for $$f"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
+	    $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { printf "%s\n" "shc failed for $$f"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
 	    chmod +x "$$out" || true; \
 	    mv "$$f.bak.$$" "$$f" >/dev/null 2>&1 || true; \
 	  done; \
 	else \
-	  echo " - Aucun .sh dans $(CONF_SUB)"; \
+	  printf "%s\n" "Informations > Aucun .sh dans $(CONF_SUB)"; \
 	fi
 	# Build/Unix/IriX/installirix.sh
 	@if [ -f "$(TMP_BUILD)/$(BUILD_UNIX_IR)/installirix.sh" ]; then \
 	  f="$(TMP_BUILD)/$(BUILD_UNIX_IR)/installirix.sh"; \
-	  out="$(TMP_BUILD)/$(PKG_BIN)/IriX_installirix"; \
-	  echo " -> $$f -> $$out"; \
+	  out="$(TMP_BUILD)/$(PKG_BIN)/IriX/installirix"; \
+	  echo "[build] $$f -> $$out"; \
 	  cp "$$f" "$$f.bak.$$"; \
 	  $(call ensure_shebang_cmd,$$f); \
-	  $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { echo "shc failed for irix"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
+	  $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { printf "%s\n" "shc failed for irix"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
 	  chmod +x "$$out" || true; \
 	  mv "$$f.bak.$$" "$$f" >/dev/null 2>&1 || true; \
 	else \
-	  echo " - $(BUILD_UNIX_IR)/installirix.sh introuvable"; \
+	  printf "%s\n" "$(BUILD_UNIX_IR)/installirix.sh introuvable"; \
 	fi
 	# setup-overtchat.sh (si existant)
 	@if [ -f "$(TMP_BUILD)/$(SETUP_SRC)" ]; then \
-	  f="$(TMP_BUILD)/$(SETUP_SRC)"; out="$(TMP_BUILD)/$(PKG_BIN)/setup-overtchat"; \
-	  echo " -> $$f -> $$out"; \
+	  f="$(TMP_BUILD)/$(SETUP_SRC)"; out="$(TMP_BUILD)/$(PKG_BIN)/Lib/setup-overtchat"; \
+	  printf "%s\n" "[build] $$f -> $$out"; \
 	  cp "$$f" "$$f.bak.$$"; \
 	  $(call ensure_shebang_cmd,$$f); \
-	  $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { echo "shc failed for setup"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
+	  $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { printf "%s\n" "shc failed for setup"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
 	  chmod +x "$$out" || true; \
 	  mv "$$f.bak.$$" "$$f" >/dev/null 2>&1 || true; \
 	else \
-	  echo " - $(SETUP_SRC) introuvable"; \
+	  printf "%s\n" "$(SETUP_SRC) introuvable"; \
 	fi
-	@echo "✔ Chiffrement terminé"
+	@printf "%s\n" "Informations > Chiffrement terminé"
 
 # 4) patch: remplace appels littéraux vers Service-Overtchat/... par bin/...
 #    utilise tools/patch_calls.sh si présent dans le repo cloné, sinon tools_local/patch_calls.sh fourni localement
 patch: encrypt
-	@echo "🔧 Patch des chemins pour pointer vers $(PKG_BIN)/"
+	@printf "%s\n" "Patch des chemins pour pointer vers $(PKG_BIN)/"
 	@if [ -x "$(TMP_BUILD)/tools/patch_calls.sh" ]; then \
 	  bash "$(TMP_BUILD)/tools/patch_calls.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
 	else \
-	  echo " - tools/patch_calls.sh absent dans le repo cloné ; utilisation de tools_local/patch_calls.sh"; \
+	  printf "%s\n" "tools/patch_calls.sh absent dans le repo cloné ; utilisation de tools_local/patch_calls.sh"; \
 	  bash "./tools_local/patch_calls.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
 	fi
-	@echo "✔ Patch OK"
+	@printf "%s\n" "Patch terminé"
 
 # Optional: remove source .sh from the package (uncomment use if desired)
 strip_sources:
-	@echo "🗑 Suppression des sources .sh du build (ne laisse que bin/...)"; \
+	@printf "%s\n" "Suppression des sources .sh du build (ne laisse que bin/...)"; \
 	find "$(TMP_BUILD)/$(REPO_BASE)" -type f -name "*.sh" -not -path "$(TMP_BUILD)/$(PKG_BIN)/*" -print0 | xargs -0 -r rm -f || true; \
-	echo "✔ Sources supprimées"
+	printf "%s\n" "Sources supprimées"
 
 # 5) Prépare l'arbo pour l'archive : copy Conf/ Unix/ bin/ VERSION etc.
 pack: patch
-	@echo "📦 Préparation de l'arbo pour l'archive $(OUT_DIR)"
+	@printf "%s\n" "Préparation de l'arbo pour l'archive $(OUT_DIR)"
 	@rm -rf "$(OUT_DIR)/$(PKG_NAME)" || true
 	@mkdir -p "$(OUT_DIR)/$(PKG_NAME)"
 	# copier Conf (fichiers .conf), Unix (sauf scripts binaires), Logs optionnel
@@ -150,13 +155,17 @@ pack: patch
 	@cp -a "$(TMP_BUILD)/$(PKG_BIN)"/* "$(OUT_DIR)/$(PKG_NAME)/bin/" 2>/dev/null || true
 	# VERSION
 	@cd "$(TMP_BUILD)" && (git rev-parse --short HEAD > "$(OUT_DIR)/$(PKG_NAME)/VERSION" 2>/dev/null || echo "unknown" > "$(OUT_DIR)/$(PKG_NAME)/VERSION")
-	@echo "✔ Arbo OK"
+	@printf "%s\n" "Arbo valide créée dans $(OUT_DIR)/$(PKG_NAME)"
 
 # 6) release : tar.gz final
 release: pack
-	@echo "📦 Compression finale (tar.gz)"
+	@printf "%s\n" "Compression finale (tar.gz)"
 	@mkdir -p "$(OUT_DIR)"
 	@ver="$$(cat "$(OUT_DIR)/$(PKG_NAME)/VERSION" 2>/dev/null || echo unknown)"; \
 	tgt="$(OUT_DIR)/$(PKG_NAME)-v$$ver.tar.gz"; \
 	cd "$(OUT_DIR)" && tar -czf "$$tgt" "$(PKG_NAME)"; \
-	echo "✔ Archive créée: $$tgt"
+	printf "%s\n" "Archive créée: $$tgt"
+	mv "$(OUT_DIR)/$(PKG_NAME)/VERSION" "$(OUT_DIR)/$(PKG_NAME)-VERSION.txt" 2>/dev/null || true
+	@printf "%s\n" "Release terminée. Fichier disponible dans $(OUT_DIR)"
+	mv "$(OUT_DIR)/$(PKG_NAME)-v$$ver.tar.gz" "$(PWD)/$(PKG_NAME).tar.gz"; \
+	printf "%s\n" "Fichier déplacé dans le répertoire courant."

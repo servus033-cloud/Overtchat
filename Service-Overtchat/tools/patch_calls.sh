@@ -32,7 +32,7 @@ if compgen -G "${REPO_ROOT}/Service-Overtchat/Lib/*.sh" >/dev/null 2>&1; then
   for f in "${REPO_ROOT}"/Service-Overtchat/Lib/*.sh; do
     rel="${f#$REPO_ROOT/}"
     name="$(basename "$f" .sh)"
-    dest="${BIN_DIR_REL}/Lib/Lib_${name}"
+    dest="${BIN_DIR_REL}/Lib/${name}"
     echo "Mapping: $rel -> $dest"
     do_replace "$rel" "$dest"
   done
@@ -43,7 +43,7 @@ if compgen -G "${REPO_ROOT}/Service-Overtchat/Conf/*.sh" >/dev/null 2>&1; then
   for f in "${REPO_ROOT}"/Service-Overtchat/Conf/*.sh; do
     rel="${f#$REPO_ROOT/}"
     name="$(basename "$f" .sh)"
-    dest="${BIN_DIR_REL}/Conf/Conf_${name}"
+    dest="${BIN_DIR_REL}/Conf/${name}"
     echo "Mapping: $rel -> $dest"
     do_replace "$rel" "$dest"
   done
@@ -52,17 +52,9 @@ fi
 # Build/Unix/IriX/installirix.sh
 if [ -f "${REPO_ROOT}/Service-Overtchat/Build/Unix/IriX/installirix.sh" ]; then
   rel="Service-Overtchat/Build/Unix/IriX/installirix.sh"
-  dest="${BIN_DIR_REL}/IriX_installirix"
+  dest="${BIN_DIR_REL}/IriX/installirix"
   echo "Mapping: $rel -> $dest"
   do_replace "$rel" "$dest"
 fi
 
-# setup-overtchat.sh
-if [ -f "${REPO_ROOT}/Service-Overtchat/setup-overtchat.sh" ]; then
-  rel="Service-Overtchat/setup-overtchat.sh"
-  dest="${BIN_DIR_REL}/setup-overtchat"
-  echo "Mapping: $rel -> $dest"
-  do_replace "$rel" "$dest"
-fi
-
-echo "✔ Patch_local terminé."
+echo "Patch_local terminé."
