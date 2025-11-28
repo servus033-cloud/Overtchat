@@ -12,7 +12,7 @@ echo "Patch: repo=$REPO_ROOT bin_dir=$BIN_DIR_REL"
 # Fonction pour patcher un fichier source (path relatif à repo)
 patch_one() {
   relpath="$1"    # e.g. Service-Overtchat/Lib/core.sh
-  binname="$2"    # e.g. Lib_core
+  binname="$2"    # e.g. Lib/core
   src_escaped=$(printf '%s\n' "$relpath" | sed -e 's/[\/&]/\\&/g')
 
   # Patterns simples à remplacer (source, bash, sh, ./path, path)
@@ -47,7 +47,7 @@ if compgen -G "$REPO_ROOT/Service-Overtchat/Lib/*.sh" >/dev/null 2>&1; then
   for f in "$REPO_ROOT"/Service-Overtchat/Lib/*.sh; do
     rel="${f#$REPO_ROOT/}"
     name="$(basename "$f" .sh)"
-    binname="Lib_${name}"
+    binname="Lib/${name}"
     echo "Mapping: $rel -> ${BIN_DIR_REL}/${binname}"
     patch_one "$rel" "$binname"
   done
@@ -58,7 +58,7 @@ if compgen -G "$REPO_ROOT/Service-Overtchat/Conf/*.sh" >/dev/null 2>&1; then
   for f in "$REPO_ROOT"/Service-Overtchat/Conf/*.sh; do
     rel="${f#$REPO_ROOT/}"
     name="$(basename "$f" .sh)"
-    binname="Conf_${name}"
+    binname="Conf/${name}"
     echo "Mapping: $rel -> ${BIN_DIR_REL}/${binname}"
     patch_one "$rel" "$binname"
   done
