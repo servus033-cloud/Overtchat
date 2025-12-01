@@ -77,11 +77,11 @@ log() {
     timestamp="$(date "+%Y-%m-%d %H:%M:%S")"
     logfile="logs.dat"
 
-    $(find "$HOME/Overtchat/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null) && {
+    if find "$HOME/Overtchat/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null; then
         logfile="$HOME/Overtchat/Service-Overtchat/Logs/$logfile"
-    } || {
+    else
         logfile="/tmp/log~overtchat.dat"
-    }
+    fi
 
     txt="[$timestamp] $msg"
     printf '%s\n' '$txt' >>"$logfile"
@@ -128,10 +128,10 @@ prompt_continue() {
 control_install_folders() {
     local folders="Service-Overtchat Build Unix IriX Windows Lib Conf Eggdrop Logs"
     for dir in $folders; do
-        [[ ! find "$HOME" -type d -name "$dir" -print -quit 2>/dev/null ]] && {
+        if ! find "$HOME" -type d -name "$dir" -print -quit 2>/dev/null >/dev/null; then
             printf "%s\n" "Dossier $dir introuvable. Veuillez installer correctement le programme."
             return 1
-        }
+        fi
     done
     return 0
 }
@@ -144,11 +144,11 @@ control_install_folders() {
 view_logs() {
     logfile="logs.dat"
 
-    $(find "$HOME/Overtchat/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null) && {
+    if find "$HOME/Overtchat/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null; then
         logfile="$HOME/Overtchat/Service-Overtchat/Logs/$logfile"
-    } || {
+    else
         logfile="/tmp/log~overtchat.dat"
-    }
+    fi
 
     printf "%s\n" "Contenu du fichier de logs : $logfile"
     # afficher ou message vide
@@ -367,10 +367,9 @@ PANEL
 [[ -d "$HOME/Service-Overtchat" ]] && [[ -f "/tmp/.install_overtchat" ]] && $(cat "/tmp/.install_overtchat" | grep -q "install_complete=1") && {
     printf "%s\n" "Installation détectée. Accès au panel complet."
     
-    [[ $(find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null) ]] && {
-        # shellcheck source=../Conf/overtchat.conf
+    if find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null; then
         source "$HOME/Service-Overtchat/Conf/overtchat.conf"
-    }
+    fi
 
 cat <<'PANEL'
                         ──────────────────────────────
