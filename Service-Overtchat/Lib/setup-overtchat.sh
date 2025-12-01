@@ -275,7 +275,7 @@ install() {
     APP_DIR="/tmp/.Overtchat" # sortie dossier installé
     REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
     BRANCH="main"
-    MAKEVAR"release"
+    MAKEVAR="release"
 
     if ! command -v git &>/dev/null; then
         printf "%s\n" "Git n'est pas installé. Impossible d'installer. Veillez installer Git via la commande : sudo apt install git"
@@ -287,7 +287,7 @@ install() {
     # Si pas encore installé
     if [[ ! -d "$APP_DIR/.git" ]]; then
         printf "%s\n" "Clonage du dépôt..."
-        git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || printf "%s\n" "Une erreur est survenue lors du clonage"; exit 1
+        git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Une erreur est survenue lors du clonage"; exit 1 }
 
         # Donner accès direct aux dossiers
         # (ils sont déjà dans le dépôt, donc rien à déplacer)
