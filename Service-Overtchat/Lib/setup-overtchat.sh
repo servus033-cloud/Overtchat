@@ -314,6 +314,7 @@ install() {
 
         # Run setup compilation
         cd "$APP_DIR/Install/" || exit 1
+        
         makefile="$APP_DIR/Install/MAKEFILE"
         if [[ -f "$makefile" ]]; then
             printf "%s\n" "Lancement de la compilation..."
