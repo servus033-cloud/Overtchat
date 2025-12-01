@@ -58,7 +58,7 @@ case "$$first" in \
 esac
 endef
 
-# 3) encrypt : shc pour Lib/*.sh, Conf/*.sh (si présents), Build/Unix/IriX/installirix.sh, setup-overtchat.sh
+# 3) encrypt : shc pour Lib/*.sh
 encrypt: prepare
 	@printf "%s\n" "Démarrage chiffrement (shc)"
 	# Lib/*.sh
@@ -78,7 +78,6 @@ encrypt: prepare
 	fi
 
 # 4) patch: remplace appels littéraux vers Service-Overtchat/... par bin/...
-#    utilise tools/patch_calls.sh si présent dans le repo cloné, sinon tools_local/patch_calls.sh fourni localement
 patch: encrypt
 	@printf "%s\n" "Patch des chemins pour pointer vers $(PKG_BIN)/"
 	@if [ -x "$(TMP_BUILD)/Install/bin/patch_overtchat.sh" ]; then \
