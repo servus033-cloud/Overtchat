@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools_local/patch_calls.sh
+# tools/patch_calls.sh
 set -euo pipefail
 IFS=$'\n\t'
 

@@ -6,8 +6,8 @@ SHELL := /bin/bash
 GIT_REPO   := https://github.com/servus033-cloud/Overtchat.git
 GIT_BRANCH := main
 
-TMP_BUILD  := $(PWD)/.build_overtchat
-OUT_DIR    := $(PWD)/dist
+TMP_BUILD  := $(PWD)/overtchat-V2_build
+OUT_DIR    := $(PWD)/Service-Overtchat-release
 PKG_NAME   := Service-Overtchat
 SHC        := shc
 CC         := gcc
