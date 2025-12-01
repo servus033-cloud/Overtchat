@@ -293,7 +293,7 @@ install() {
         # (ils sont déjà dans le dépôt, donc rien à déplacer)
 
         if [[ -d "$APP_DIR/Install/bin" ]]; then
-            if find "$APP_DIR/Install/bin" -type f -name "*.sh" -print -quit 2>/dev/null; then
+            if [[ find "$APP_DIR/Install/bin" -type f -name "*.sh" -print -quit 2>/dev/null ]]; then
                 printf "%s\n" "Scripts d'installation trouvés dans $APP_DIR/Install/bin"
                 find "$APP_DIR/Install/bin" -type f -name "*.sh" -exec chmod +x {} \;
             else
@@ -304,7 +304,7 @@ install() {
         
         # Rendre les .sh exécutables
          if [[ -d "$APP_DIR/Service-Overtchat/Lib" ]]; then
-            if find "$APP_DIR/Service-Overtchat/Lib" -type f -name "*.sh" -print -quit 2>/dev/null; then
+            if [[ find "$APP_DIR/Service-Overtchat/Lib" -type f -name "*.sh" -print -quit 2>/dev/null ]]; then
                 find "$APP_DIR/Service-Overtchat/Lib" -type f -name "*.sh" -exec chmod +x {} \;
             else
                 printf "%s\n" "Aucun script .sh trouvé dans $APP_DIR/Service-Overtchat/Lib. Installation impossible."
@@ -314,7 +314,7 @@ install() {
 
         # Run setup compilation
         cd "$APP_DIR/Install/" || exit 1
-        
+
         makefile="$APP_DIR/Install/MAKEFILE"
         if [[ -f "$makefile" ]]; then
             printf "%s\n" "Lancement de la compilation..."
