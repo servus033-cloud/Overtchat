@@ -80,7 +80,7 @@ encrypt: prepare
 # 4) patch: remplace appels littéraux vers Service-Overtchat/... par bin/...
 patch: encrypt
 	@printf "%s\n" "Patch des chemins pour pointer vers $(PKG_BIN)/"
-	@if [ -x "$(TMP_BUILD)/Install/bin/patch_overtchat.sh" ]; then \
+	@if [ -f "$(TMP_BUILD)/Install/bin/patch_overtchat.sh" ]; then \
 	  bash "$(TMP_BUILD)/Install/bin/patch_overtchat.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
 	else \
 	  printf "%s\n" "Install/bin/patch_overtchat.sh absent dans le repo cloné"; exit 1; \
