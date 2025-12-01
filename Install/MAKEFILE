@@ -30,11 +30,6 @@ clean:
 	@rm -rf "$(TMP_BUILD)" "$(OUT_DIR)"
 	@printf "%s\n" "Nettoyage effectué"
 
-mrproper: clean
-	@printf "%s\n" "Nettoyage complet"
-	@rm -rf "$(TMP_BUILD)" "$(OUT_DIR)"
-	@printf "%s\n" "Nettoyage terminé"
-
 # 1) clone propre
 clone: clean
 	@echo "Clonage de $(GIT_REPO) dans $(TMP_BUILD)"
@@ -127,11 +122,10 @@ encrypt: prepare
 #    utilise tools/patch_calls.sh si présent dans le repo cloné, sinon tools_local/patch_calls.sh fourni localement
 patch: encrypt
 	@printf "%s\n" "Patch des chemins pour pointer vers $(PKG_BIN)/"
-	@if [ -x "$(TMP_BUILD)/tools/patch_calls.sh" ]; then \
-	  bash "$(TMP_BUILD)/tools/patch_calls.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
+	@if [ -x "$(TMP_BUILD)/Install/bin/patch_overtchat.sh" ]; then \
+	  bash "$(TMP_BUILD)/Install/bin/patch_overtchat.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
 	else \
-	  printf "%s\n" "tools/patch_calls.sh absent dans le repo cloné ; utilisation de tools_local/patch_calls.sh"; \
-	  bash "./tools_local/patch_calls.sh" "$(TMP_BUILD)" "$(PKG_BIN)"; \
+	  printf "%s\n" "Install/bin/patch_overtchat.sh absent dans le repo cloné"; exit 1; \
 	fi
 	@printf "%s\n" "Patch terminé"
 
