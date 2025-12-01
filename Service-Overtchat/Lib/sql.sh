@@ -3,6 +3,17 @@
                                         #   Création du fichier sql.sh
                                         # ────────────────────────────────── #
 
+EXPORT=$HOME/Service-Overtchat/bin/Lib/include
+
+# On controle si la bibliothèque include est présente
+for var in over info web numeric folders files shell server prog; do
+    if compgen -v | grep -qx "$var"; then
+        echo "La variable '$var' existe et vaut : ${!var}"
+    else
+        echo "La variable '$var' n'est pas définie"
+    fi
+done
+
 create_sql_sh() {
 # Fichier Sql
 if [[ -n "${shell[build_sql]+_}" ]]; then
@@ -10,7 +21,7 @@ if [[ -n "${shell[build_sql]+_}" ]]; then
         log "Création du fichier $(basename -- "${shell[build_sql]}") (Code erreur : 056) [en cours]"
         warn "Création du fichier $(basename -- "${shell[build_sql]}") [ en cours... ]"
         sleep 2
-        cat >"$HOME/${shell[build_sql]}" <<'SQL'
+cat >"$HOME/${shell[build_sql]}" <<'SQL'
 #!/usr/bin/env bash
 
 # --- Création/initialisation de la base SQL pour Service-Overtchat (avec pwgen) ---

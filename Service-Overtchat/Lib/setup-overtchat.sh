@@ -316,6 +316,11 @@ install() {
                 tar -xzf "$HOME/Service-Overtchat.tar.gz" -C "$HOME/" || { printf "%s\n" "Erreur lors du déploiement"; exit 1; }
                 printf "%s\n" "Déploiement terminé avec succès."
                 rm -f "$HOME/Service-Overtchat.tar.gz"
+                printf "%s\n" "Installation terminée avec succès."
+                
+                mkdir $HOME/Service-Overtchat/tmp || exit 1
+                cd $HOME/Service-Overtchat/bin/Lib || exit 1
+                bash setup-overtchat.sh
             else
                 printf "%s\n" "Archive introuvable après compilation. Installation annulée."
                 exit 1
@@ -356,11 +361,24 @@ setup_sql() {
     bash "${conf[over]}"
 }
 
+# Option 8
+init_git() {
+    printf "%s\n" "Initialisation du dépôt Git..."
+    APP_DIR="/tmp/.Overtchat"
+    REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
+    BRANCH="main"
+    if [[ -d "$APP_DIR" ]]; then
+        rm -rf "$APP_DIR"
+    fi
+    git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Erreur lors du clonage"; exit 1; }
+    printf "%s\n" "Dépôt Git initialisé avec succès."
+}
+
                                         ##########################
                                         # === Menu principal === #
                                         ##########################
 
-[[ ! -f "/tmp/.install_overtchat" ]] && {
+[[ ! -d "/tmp/.Overtchat" ]] && {
     printf "%s\n\n" "Installation non détectée. Veuillez installer le programme."
 cat <<'PANEL'
                         ──────────────────────────────
@@ -371,14 +389,22 @@ cat <<'PANEL'
 PANEL
 }
 
-[[ -f "/tmp/.install_overtchat" ]] && $(cat /tmp/.install_overtchat | grep -q "install_complete=1") && [[ ! -d "$HOME/Service-Overtchat" ]] && {
-    rm -f "/tmp/.install_overtchat"
-    printf "%s\n" "Installation incomplète détectée. Re-initialisation de l'install."
-    bash $0
-    exit 0
+[[ ! -d "/tmp/.Overtchat" ]] && [[ -d "$HOME/Service-Overtchat" ]] && {
+    printf "%s\n" "Une anomalie concernant le dépôt Git a été détectée. Re-installation requise."
+    # On recharge le dépôt Git
+cat <<'PANEL'
+                        ──────────────────────────────
+                        |  Service-Overtchat - Panel  |
+                        ──────────────────────────────
+        0) Quitter le programme : Quitter le panel et revenir au terminal
+        6) Désinstaller le programme entièrement : Action irréversible
+        8) Initialisation dépôt Git : Re-clonage du dépôt Git
+PANEL
 }
 
-[[ -f "/tmp/.install_overtchat" ]] && $(cat "/tmp/.install_overtchat" | grep -q "install_complete=0") && {
+
+[[ -d "/tmp/.Overtchat" ]] && [[ ! -d "$HOME/Service-Overtchat" ]] && {
+    printf "%s\n" "Installation incomplète détectée. Veuillez installer correctement le programme."
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
@@ -411,7 +437,7 @@ Veuillez faire vôtre choix :
         5) Installer le programme Service-Overtchat : Lance le script d'installation complet
         6) Désinstaller le programme entièrement : Action irréversible
         7) Installation/Paramètre MariaDB : Lance le script de configuration de la base de données MariaDB
-
+        8) Initialisation dépôt Git : Re-clonage du dépôt Git
 PANEL
 }
 
@@ -450,6 +476,10 @@ panels_loop() {
             ;;
         7)
             setup_sql
+            prompt_continue
+            ;;
+        8)
+            init_git
             prompt_continue
             ;;
         *)
