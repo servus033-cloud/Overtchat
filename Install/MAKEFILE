@@ -119,5 +119,5 @@ release: pack
 	printf "%s\n" "Archive créée: $$tgt"; \
 	mv "$(OUT_DIR)/$(PKG_NAME)/VERSION" "$(OUT_DIR)/$(PKG_NAME)-VERSION.txt" 2>/dev/null || true; \
 	printf "%s\n" "Release terminée. Fichier disponible dans $(OUT_DIR)"; \
-	mv "$(OUT_DIR)/$(PKG_NAME)-v$$ver.tar.gz" "$(PWD)/$(PKG_NAME).tar.gz"; \
+	mv "$(OUT_DIR)/$(PKG_NAME)-v$$ver.tar.gz" "$$HOME/$(PKG_NAME).tar.gz"; \
 	printf "%s\n" "Fichier déplacé dans le répertoire courant."

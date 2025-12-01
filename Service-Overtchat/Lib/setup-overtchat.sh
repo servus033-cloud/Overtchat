@@ -257,9 +257,8 @@ upgrade() {
 install() {
     # Contrôle si installation déjà faite
     
-    [[ -d "$HOME/Service-Overtchat" ]] && {
-        printf "%s\n" "Service-Overtchat déjà installé. Veuillez désinstaller avant de réinstaller."; return 1
-    }
+    [[ -d "$HOME/Overtchat" ]] && { printf "%s\n" "Service déja installé"; return 1 }
+    [[ -d "$HOME/Overtchat/Service-Overtchat" ]] && { printf "%s\n" "Service déja installé"; return 1 }
 
     printf "%s\n" "L'installation va commencer. Veuillez suivre les instructions à l'écran."
     prompt_continue
@@ -273,12 +272,13 @@ install() {
     fi
 
     # Depot GitHub
-    APP_DIR="$HOME/Overtchat"
+    APP_DIR="/tmp/.Overtchat" # sortie dossier installé
     REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
     BRANCH="main"
+    MAKEVAR"release"
 
     if ! command -v git &>/dev/null; then
-        printf "%s\n" "Git n'est pas installé. Impossible d'installer."
+        printf "%s\n" "Git n'est pas installé. Impossible d'installer. Veillez installer Git via la commande : sudo apt install git"
         exit 1
     fi
 
@@ -287,18 +287,59 @@ install() {
     # Si pas encore installé
     if [[ ! -d "$APP_DIR/.git" ]]; then
         printf "%s\n" "Clonage du dépôt..."
-        git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || exit 1
+        git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || printf "%s\n" "Une erreur est survenue lors du clonage"; exit 1
 
         # Donner accès direct aux dossiers
         # (ils sont déjà dans le dépôt, donc rien à déplacer)
 
+        if [[ -d "$APP_DIR/Install/bin" ]]; then
+            if find "$APP_DIR/Install/bin" -type f -name "*.sh" -print -quit 2>/dev/null; then
+                printf "%s\n" "Scripts d'installation trouvés dans $APP_DIR/Install/bin"
+                find "$APP_DIR/Install/bin" -type f -name "*.sh" -exec chmod +x {} \;
+            else
+                printf "%s\n" "Aucun script d'installation trouvé dans $APP_DIR/Install/bin. Installation impossible."
+                exit 1
+            fi
+        fi
+        
         # Rendre les .sh exécutables
-        find "$APP_DIR/Service-Overtchat/Lib" -type f -name "*.sh" -exec chmod +x {} \;
+         if [[ -d "$APP_DIR/Service-Overtchat/Lib" ]]; then
+            if find "$APP_DIR/Service-Overtchat/Lib" -type f -name "*.sh" -print -quit 2>/dev/null; then
+                find "$APP_DIR/Service-Overtchat/Lib" -type f -name "*.sh" -exec chmod +x {} \;
+            else
+                printf "%s\n" "Aucun script .sh trouvé dans $APP_DIR/Service-Overtchat/Lib. Installation impossible."
+                exit 1
+            fi
+        fi
 
-        printf "%s\n" "Installation [ terminée ]"
+        # Run setup compilation
+        cd "$APP_DIR/Install/" || exit 1
+        makefile="$APP_DIR/Install/MAKEFILE"
+        if [[ -f "$makefile" ]]; then
+            printf "%s\n" "Lancement de la compilation..."
+            make -f "$makefile" "$MAKEVAR" || {
+                printf "%s\n" "Erreur lors de la compilation. Installation annulée."
+                exit 1
+            }
 
-        # Run setup
-        bash "$APP_DIR/Service-Overtchat/Lib/setup-overtchat.sh"
+            printf "%s\n" "Compilation terminée avec succès."
+            
+            if [[ -f "$HOME/Service-Overtchat.tar.gz" ]]; then
+                printf "%s\n" "Déploiement de l'archive..."
+                tar -xzf "$HOME/Service-Overtchat.tar.gz" -C "$HOME/" || {
+                    printf "%s\n" "Erreur lors du déploiement de l'archive. Installation annulée."
+                    exit 1
+                }
+                printf "%s\n" "Déploiement terminé avec succès."
+                rm -f "$HOME/Service-Overtchat.tar.gz"
+            else
+                printf "%s\n" "Archive Service-Overtchat introuvable après compilation. Installation annulée."
+                exit 1
+            fi
+        else
+            printf "%s\n" "Fichier MAKEFILE introuvable. Impossible de compiler."
+            exit 1
+        fi
         exit 0
     fi
 }
