@@ -62,8 +62,8 @@ endef
 encrypt: prepare
 	@printf "%s\n" "Démarrage chiffrement (shc)"
 	# Lib/*.sh
-	@if ls "$(TMP_BUILD)/$(LIB_SUB)"/*.sh >/dev/null 2>&1; then \
-	  for f in "$(TMP_BUILD)/$(LIB_SUB)"/*.sh; do \
+	@if ls "$(TMP_BUILD)/$(LIB_SUB)" /*.sh >/dev/null 2>&1; then \
+	  for f in "$(TMP_BUILD)/$(LIB_SUB)" /*.sh; do \
 	    name=$$(basename $$f .sh); \
 	    out="$(TMP_BUILD)/$(PKG_BIN)/Lib/$$name"; \
 	    printf "%s\n" "[build] $$f -> $$out"; \
@@ -77,8 +77,8 @@ encrypt: prepare
 	  printf "%s\n" "Alerte > Aucun .sh dans $(LIB_SUB)"; \
 	fi
 	# Conf/*.sh (optionnel)
-	@if ls "$(TMP_BUILD)/$(CONF_SUB)"/*.sh >/dev/null 2>&1; then \
-	  for f in "$(TMP_BUILD)/$(CONF_SUB)"/*.sh; do \
+	@if ls "$(TMP_BUILD)/$(CONF_SUB)" /*.sh >/dev/null 2>&1; then \
+	  for f in "$(TMP_BUILD)/$(CONF_SUB)" /*.sh; do \
 	    name=$$(basename $$f .sh); \
 	    out="$(TMP_BUILD)/$(PKG_BIN)/Conf/Conf_$$name"; \
 	    printf "%s\n" "[build] $$f -> $$out"; \
@@ -91,19 +91,7 @@ encrypt: prepare
 	else \
 	  printf "%s\n" "Informations > Aucun .sh dans $(CONF_SUB)"; \
 	fi
-	# Build/Unix/IriX/installirix.sh
-	@if [ -f "$(TMP_BUILD)/$(BUILD_UNIX_IR)/installirix.sh" ]; then \
-	  f="$(TMP_BUILD)/$(BUILD_UNIX_IR)/installirix.sh"; \
-	  out="$(TMP_BUILD)/$(PKG_BIN)/IriX/installirix"; \
-	  echo "[build] $$f -> $$out"; \
-	  cp "$$f" "$$f.bak.$$"; \
-	  $(call ensure_shebang_cmd,$$f); \
-	  $(SHC) -f "$$f" -o "$$out" >/dev/null 2>&1 || { printf "%s\n" "shc failed for irix"; mv "$$f.bak.$$" "$$f"; exit 1; }; \
-	  chmod +x "$$out" || true; \
-	  mv "$$f.bak.$$" "$$f" >/dev/null 2>&1 || true; \
-	else \
-	  printf "%s\n" "$(BUILD_UNIX_IR)/installirix.sh introuvable"; \
-	fi
+	
 	# setup-overtchat.sh (si existant)
 	@if [ -f "$(TMP_BUILD)/$(SETUP_SRC)" ]; then \
 	  f="$(TMP_BUILD)/$(SETUP_SRC)"; out="$(TMP_BUILD)/$(PKG_BIN)/Lib/setup-overtchat"; \
