@@ -77,18 +77,19 @@ log() {
     timestamp="$(date "+%Y-%m-%d %H:%M:%S")"
     logfile="logs.dat"
 
-    if find "$HOME/Overtchat/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null; then
-        logfile="$HOME/Overtchat/Service-Overtchat/Logs/$logfile"
+    conf[log]=$(find "$HOME/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null)
+    if [[ -n "${conf[log]}" ]]; then
+        logfiles="$HOME/Service-Overtchat/Logs/$logfile"
     else
-        logfile="/tmp/log~overtchat.dat"
+        logfiles="/tmp/.Overtchat/Service-Overtchat/Logs/$logfile"
     fi
 
     txt="[$timestamp] $msg"
-    printf '%s\n' '$txt' >>"$logfile"
+    printf '%s\n' '$txt' >>"$logfiles"
 }
 
 load_config() {
-    conf[over]=$(find "$HOME/Overtchat/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null)
+    conf[over]=$(find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null)
     if [[ -z "${conf[over]}" ]]; then
         printf "%s\n" "Fichier de configuration introuvable. Veuillez installer correctement le programme."
         return 1
@@ -203,7 +204,12 @@ upgrade() {
 
     REPO_DIR="$HOME/Overtchat/Service-Overtchat"
     if [[ ! -d "$REPO_DIR/.git" ]]; then
-        printf "%s\n" "Répertoire Git introuvable dans $REPO_DIR. Impossible de récupérer les tags."
+        printf "%s\n" "Répertoire Git introuvable dans $REPO_DIR. Analyse dossier secours..."
+    elif [[ -d "/tmp/.Overtchat/.git" ]]; then
+        REPO_DIR="/tmp/.Overtchat/.git"
+        printf "%s\n" "Répertoire Git trouvé dans /tmp/.Overtchat/.git. Utilisation de ce dépôt pour les mises à jour."
+    else
+        printf "%s\n" "Répertoire Git introuvable dans /tmp/.Overtchat/.git. Impossible de vérifier les mises à jour."
         return 1
     fi
 
@@ -234,6 +240,7 @@ upgrade() {
         build_date=$(date '+%Y-%m-%d %H:%M:%S')
         check_date=$(date '+%Y-%m-%d %H:%M:%S')
 
+        conf_file="$HOME/Service-Overtchat/Conf/overtchat.conf"
         sed -i "s|numeric\[\"version\"\]=\"[^\"]*\"|numeric[\"version\"]=\"$latest_version\"|" "$conf_file"
         sed -i "s|numeric\[\"build\"\]=\"[^\"]*\"|numeric[\"build\"]=\"$build_date\"|" "$conf_file"
         sed -i "s|numeric\[\"check\"\]=\"[^\"]*\"|numeric[\"check\"]=\"$check_date\"|" "$conf_file"
