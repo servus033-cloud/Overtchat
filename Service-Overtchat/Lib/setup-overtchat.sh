@@ -405,6 +405,8 @@ uninstall() {
         [[ -d "$dir" ]] && rm -rf "$dir"
     done
 
+    [[ -d "$APP_DIR" ]] && rm -rf "$APP_DIR"
+    [[ -d "$APP_GIT" ]] && rm -rf "$APP_GIT"
     printf "%s\n" "Service-Overtchat a été désinstallé avec succès."
     printf "%s\n" "Merci d'avoir utilisé Service-Overtchat by SerVuS"
     printf "%s\n" "Pour nous retrouver : http://service.overtchat.free.fr"
