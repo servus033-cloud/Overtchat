@@ -419,7 +419,7 @@ if [[ -d "$HOME/Service-Overtchat" && -d "/tmp/.Overtchat" ]]; then
     if [[ -d "/tmp/.Overtchat/.git" ]]; then
         printf "%s\n" "Installation détectée et complète. Contrôle configuration..."
         
-        if find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null ]]; then
+        if find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null; then
             source "$HOME/Service-Overtchat/Conf/overtchat.conf"
         else
             printf "%s\n" "Fichier de configuration introuvable. Veuillez réinstaller le programme."
