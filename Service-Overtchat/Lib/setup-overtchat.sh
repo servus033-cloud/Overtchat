@@ -382,49 +382,68 @@ init_git() {
     printf "%s\n" "Dépôt Git initialisé avec succès."
 }
 
+#!/usr/bin/env bash
+
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
                         ──────────────────────────────
 PANEL
 
-if [[ ! -d "/tmp/.Overtchat" ]]; then
+INSTALL_TMP="/tmp/.Overtchat"
+INSTALL_HOME="$HOME/Service-Overtchat"
+
+# ─────────────────────────────────────────────────────────────
+# 1) Aucune installation détectée
+# /tmp/.Overtchat n'existe pas AND $HOME/Service-Overtchat n'existe pas
+# ─────────────────────────────────────────────────────────────
+if [[ ! -d "$INSTALL_TMP" && ! -d "$INSTALL_HOME" ]]; then
     printf "%s\n\n" "Installation non détectée. Veuillez installer le programme."
 cat <<'PANEL'
         0) Quitter le programme : Quitter le panel et revenir au terminal
         5) Installer le programme Service-Overtchat : Lance le script d'installation complet
 PANEL
-fi
 
-if [[ ! -d "/tmp/.Overtchat" ]] && [[ -d "$HOME/Service-Overtchat" ]]; then
+# ─────────────────────────────────────────────────────────────
+# 2) /tmp absent mais dossier Git présent → anomalie Git
+# ─────────────────────────────────────────────────────────────
+elif [[ ! -d "$INSTALL_TMP" && -d "$INSTALL_HOME" ]]; then
     printf "%s\n" "Une anomalie concernant le dépôt Git a été détectée. Re-installation requise."
 cat <<'PANEL'
         0) Quitter le programme : Quitter le panel et revenir au terminal
         6) Désinstaller le programme entièrement : Action irréversible
         8) Initialisation dépôt Git : Re-clonage du dépôt Git
 PANEL
-fi
 
-
-if [[ -d "/tmp/.Overtchat" ]] && [[ ! -d "$HOME/Service-Overtchat" ]]; then
+# ─────────────────────────────────────────────────────────────
+# 3) /tmp présent mais dépôt absent → installation incomplète
+# ─────────────────────────────────────────────────────────────
+elif [[ -d "$INSTALL_TMP" && ! -d "$INSTALL_HOME" ]]; then
     printf "%s\n" "Installation incomplète détectée. Veuillez installer correctement le programme."
 cat <<'PANEL'
         0) Quitter le programme : Quitter le panel et revenir au terminal
         5) Installer le programme Service-Overtchat : Lance le script d'installation complet
         6) Désinstaller le programme entièrement : Action irréversible
 PANEL
-fi
 
-if [[ -d "$HOME/Service-Overtchat" && -d "/tmp/.Overtchat" ]]; then
-    if [[ -d "/tmp/.Overtchat/.git" ]]; then
+# ─────────────────────────────────────────────────────────────
+# 4) Installation complète → contrôle Git & conf
+# ─────────────────────────────────────────────────────────────
+elif [[ -d "$INSTALL_TMP" && -d "$INSTALL_HOME" ]]; then
+
+    # ─────────── Vérification dépôt Git
+    if [[ -d "$INSTALL_TMP/.git" ]]; then
         printf "%s\n" "Installation détectée et complète. Contrôle configuration..."
-        
-        if find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null; then
-            source "$HOME/Service-Overtchat/Conf/overtchat.conf"
-        else
+
+        # ─────────── Vérification fichier conf
+        conf_file=$(find "$INSTALL_HOME/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null)
+        if [[ -z "$conf_file" ]]; then
             printf "%s\n" "Fichier de configuration introuvable. Veuillez réinstaller le programme."
             exit 1
         fi
+
+        # Charger la conf
+        source "$conf_file"
 
 cat <<'PANEL'
 
@@ -440,7 +459,9 @@ Veuillez faire vôtre choix :
         7) Installation/Paramètre MariaDB : Lance le script de configuration de la base de données MariaDB
         8) Initialisation dépôt Git : Re-clonage du dépôt Git
 PANEL
+
     else
+        # ─────────── Git manquant → dépôt corrompu
         printf "%s\n" "Anomalie détectée dans le dépôt Git. Re-installation requise."
 cat <<'PANEL'
         0) Quitter le programme : Quitter le panel et revenir au terminal
