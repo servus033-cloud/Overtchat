@@ -89,13 +89,20 @@ log() {
 }
 
 load_config() {
-    conf[over]=$(find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null)
-    if [[ -z "${conf[over]}" ]]; then
+    local conf_path
+    conf_path=$(find "$HOME/Service-Overtchat/Conf" \
+                -type f -name "overtchat.conf" -print -quit 2>/dev/null)
+
+    if [[ -z "$conf_path" ]]; then
         printf "%s\n" "Fichier de configuration introuvable. Veuillez installer correctement le programme."
         return 1
-    else
-        source "${conf[over]}"
     fi
+
+    if ! source "$conf_path"; then
+        printf "%s\n" "Erreur : le fichier de configuration contient une erreur."
+        return 1
+    fi
+
     return 0
 }
 
@@ -164,21 +171,32 @@ updates() {
 
     # dossier par défaut
     APP_DIR="HOME/Service-Overtchat"
-    conf[git]=$(find "$APP_DIR" -type d -name ".git" -print -quit 2>/dev/null)
 
-    if [[ -z "${conf[git]}" ]]; then
-        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Recherche secondaire..."
-    elif [[ -d "/tmp/.Overtchat/.git" ]]; then
-        APP_DIR="/tmp/.Overtchat"
-        printf "%s\n" "Répertoire Git trouvé dans $APP_DIR. Utilisation de ce dépôt pour les mises à jour."
-    else
-        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Impossible de vérifier les mises à jour."
-        return 1
+    if [[ -d "$APP_DIR" ]]; then
+        conf[git]=$(find "$APP_DIR" -type d -name ".git" -print -quit 2>/dev/null)
+        [[ -z "${conf[git]}" ]] && printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Recherche secondaire..."
     fi
 
+    # Dossier Secours
+    APP_DIR="/tmp/.Overtchat"
+
+    if [[ -d "$APP_DIR" ]]; then
+        conf[git]=$(find "$APP_DIR" -type d -name ".git" -print -quit 2>/dev/null)
+        [[ -z "${conf[git]}" ]] && printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Mise à jour impossible !"; return 1 || {
+            printf "%s\n" "Répertoire Git trouvé dans $APP_DIR. Utilisation de ce dépôt pour les mises à jour."
+        }
+    else
+        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Impossible de vérifier les mises à jour."; return 1
+    fi
+
+    # Sélection de la branche
     BRANCH="main"
 
-    cd "$APP_DIR" || echo "Erreur chargement $APP_DIR"; exit 1
+    # On ce charge dans le dossier trouvé
+    cd "$APP_DIR" || { 
+        echo "Erreur chargement $APP_DIR"
+        return 1
+    }
 
     git fetch origin "$BRANCH"
     LOCAL=$(git rev-parse HEAD)
@@ -205,19 +223,10 @@ upgrade() {
 
     printf "%s\n" "Version actuelle : ${numeric[version]}, mise à jour automatique : ${numeric[autoupdate]}"
 
-    REPO_DIR="$HOME/Service-Overtchat"
-    conf[git]=$(find "$REPO_DIR" -type d -name ".git" -print -quit 2>/dev/null)
-    if [[ ! -d "$REPO_DIR/.git" ]]; then
-        printf "%s\n" "Répertoire Git introuvable dans $REPO_DIR. Analyse dossier secours..."
-    elif [[ -d "/tmp/.Overtchat/.git" ]]; then
-        REPO_DIR="/tmp/.Overtchat/.git"
-        printf "%s\n" "Répertoire Git trouvé dans /tmp/.Overtchat/.git. Utilisation de ce dépôt pour les mises à jour."
-    else
-        printf "%s\n" "Répertoire Git introuvable dans /tmp/.Overtchat/.git. Impossible de vérifier les mises à jour."
+    cd "$APP_DIR" || { 
+        echo "Erreur chargement $APP_DIR"
         return 1
-    fi
-
-    cd "$REPO_DIR" || return 1
+    }
 
     # Récupère la dernière version via Git tags
     git fetch --tags origin >/dev/null 2>&1
@@ -254,7 +263,8 @@ upgrade() {
         # Relancer le programme si autoupdate est activé
         if [[ "${numeric[autoupdate]}" -eq 1 ]]; then
             printf "%s\n" "Relancement automatique du programme..."
-            exec bash "$0"
+            $HOME/Service-Overtchat/bin/Lib/./$0
+            exit 0
         fi
     else
         printf "%s\n" "Le programme est déjà à jour (version ${numeric[version]})."
