@@ -172,9 +172,21 @@ funct_user() {
 updates() {
     control_install_folders || return 1
     load_config || return 1
+
                                 # Mise à jour Git #
 
-    APP_DIR="$HOME/Overtchat"
+    APP_DIR="HOME/Service-Overtchat"
+    conf[git]=$(find "$APP_DIR" -type d -name ".git" -print -quit 2>/dev/null)
+    if [[ -z "${conf[git]}" ]]; then
+        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Recherche secondaire..."
+    elif [[ -d "/tmp/.Overtchat/.git" ]]; then
+        APP_DIR="/tmp/.Overtchat"
+        printf "%s\n" "Répertoire Git trouvé dans $APP_DIR. Utilisation de ce dépôt pour les mises à jour."
+    else
+        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Impossible de vérifier les mises à jour."
+        return 1
+    fi
+
     BRANCH="main"
 
     cd "$APP_DIR" || exit 1
