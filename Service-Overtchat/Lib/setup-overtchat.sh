@@ -358,20 +358,47 @@ install() {
 
 # Option 6
 uninstall() {
-    conf[over]=$(find "$HOME" -type d -name "Service-Overtchat" -print -quit 2>/dev/null)
-    if [[ -z "${conf[over]}" ]]; then
-        printf "%s\n" "Service-Overtchat non installé. Rien à désinstaller."
-        exit 0
-    fi
+    APP_DIR="$HOME/Service-Overtchat"
+    APP_GIT="/tmp/.Overtchat"
 
     printf "%s\n" "Attention : Cette action supprimera entièrement Service-Overtchat et toutes ses données associées."
-    if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
+     if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
         printf "%s\n" "Annulation de la désinstallation"
         exit 0
     fi
 
-    rm -rf "${conf[over]}" "/tmp/log~overtchat.dat" "/tmp/.egg.tmp" "/tmp/.OVER-unix"
+    if [[ -d "$APP_DIR" ]]; then
+        printf "%s\n" "Désinstallation du Programme"
+        for dir in $APP_DIR; do
+            if [[ -f "$dir" ]]; then
+                printf "%s\n" "Suppression du fichier $dir"
+                rm -f "$dir"
+            fi
+            if [[ -d "$dir" ]]; then
+                printf "%s\n" "Suppression du dossier $dir"
+                rm -r "$dir"
+            fi
+        done
+    fi
+
+    if [[ -d "$APP_GIT" ]]; then
+        printf "%s\n" "Désinstallation du Programme"
+        for dir in $APP_GIT; do
+            if [[ -f "$dir" ]]; then
+                printf "%s\n" "Suppression du fichier $dir"
+                rm -f "$dir"
+            fi
+            if [[ -d "$dir" ]]; then
+                printf "%s\n" "Suppression du dossier $dir"
+                rm -r "$dir"
+            fi
+        done
+    fi
+
     printf "%s\n" "Service-Overtchat a été désinstallé avec succès"
+    printf "%s\n" "Merci d'avoir utilisé Service-Overtchat by SerVuS"
+    printf "%s\n" "Pour nous retrouver : http://service.overtchat.free.fr"
+    exit 0
 }
 
 # Option 7
