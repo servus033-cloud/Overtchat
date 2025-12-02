@@ -320,7 +320,8 @@ install() {
                 
                 mkdir $HOME/Service-Overtchat/tmp || exit 1
                 cd $HOME/Service-Overtchat/bin/Lib || exit 1
-                bash setup-overtchat.sh
+                rm -f $HOME/$0
+                ./setup-overtchat
             else
                 printf "%s\n" "Archive introuvable après compilation. Installation annulée."
                 exit 1
@@ -374,58 +375,51 @@ init_git() {
     printf "%s\n" "Dépôt Git initialisé avec succès."
 }
 
-                                        ##########################
-                                        # === Menu principal === #
-                                        ##########################
-
-[[ ! -d "/tmp/.Overtchat" ]] && {
-    printf "%s\n\n" "Installation non détectée. Veuillez installer le programme."
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
                         ──────────────────────────────
+PANEL
+
+if [[ ! -d "/tmp/.Overtchat" ]]; then
+    printf "%s\n\n" "Installation non détectée. Veuillez installer le programme."
+cat <<'PANEL'
         0) Quitter le programme : Quitter le panel et revenir au terminal
         5) Installer le programme Service-Overtchat : Lance le script d'installation complet
 PANEL
-}
+fi
 
-[[ ! -d "/tmp/.Overtchat" ]] && [[ -d "$HOME/Service-Overtchat" ]] && {
+if [[ ! -d "/tmp/.Overtchat" ]] && [[ -d "$HOME/Service-Overtchat" ]]; then
     printf "%s\n" "Une anomalie concernant le dépôt Git a été détectée. Re-installation requise."
-    # On recharge le dépôt Git
 cat <<'PANEL'
-                        ──────────────────────────────
-                        |  Service-Overtchat - Panel  |
-                        ──────────────────────────────
         0) Quitter le programme : Quitter le panel et revenir au terminal
         6) Désinstaller le programme entièrement : Action irréversible
         8) Initialisation dépôt Git : Re-clonage du dépôt Git
 PANEL
-}
+fi
 
 
-[[ -d "/tmp/.Overtchat" ]] && [[ ! -d "$HOME/Service-Overtchat" ]] && {
+if [[ -d "/tmp/.Overtchat" ]] && [[ ! -d "$HOME/Service-Overtchat" ]]; then
     printf "%s\n" "Installation incomplète détectée. Veuillez installer correctement le programme."
 cat <<'PANEL'
-                        ──────────────────────────────
-                        |  Service-Overtchat - Panel  |
-                        ──────────────────────────────
         0) Quitter le programme : Quitter le panel et revenir au terminal
         5) Installer le programme Service-Overtchat : Lance le script d'installation complet
         6) Désinstaller le programme entièrement : Action irréversible
 PANEL
-}
+fi
 
-[[ -d "$HOME/Service-Overtchat" ]] && [[ -f "/tmp/.install_overtchat" ]] && $(cat "/tmp/.install_overtchat" | grep -q "install_complete=1") && {
-    printf "%s\n" "Installation détectée. Accès au panel complet."
-    
-    if find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null; then
-        source "$HOME/Service-Overtchat/Conf/overtchat.conf"
-    fi
+if [[ -d "$HOME/Service-Overtchat" && -d "/tmp/.Overtchat" ]]; then
+    if [[ -d "/tmp/.Overtchat/.git" ]]; then
+        printf "%s\n" "Installation détectée et complète. Contrôle configuration..."
+        
+        if [[ find "$HOME/Service-Overtchat/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null ]]; then
+            source "$HOME/Service-Overtchat/Conf/overtchat.conf"
+        else
+            printf "%s\n" "Fichier de configuration introuvable. Veuillez réinstaller le programme."
+            exit 1
+        fi
 
 cat <<'PANEL'
-                        ──────────────────────────────
-                        |  Service-Overtchat - Panel  |
-                        ──────────────────────────────
 
 Veuillez faire vôtre choix :
 
@@ -439,7 +433,16 @@ Veuillez faire vôtre choix :
         7) Installation/Paramètre MariaDB : Lance le script de configuration de la base de données MariaDB
         8) Initialisation dépôt Git : Re-clonage du dépôt Git
 PANEL
-}
+    else
+        printf "%s\n" "Anomalie détectée dans le dépôt Git. Re-installation requise."
+cat <<'PANEL'
+        0) Quitter le programme : Quitter le panel et revenir au terminal
+        5) Installer le programme Service-Overtchat : Lance le script d'installation complet
+        6) Désinstaller le programme entièrement : Action irréversible
+        8) Initialisation dépôt Git : Re-clonage du dépôt Git
+PANEL
+    fi
+fi
 
 panels_loop() {
     local choice
