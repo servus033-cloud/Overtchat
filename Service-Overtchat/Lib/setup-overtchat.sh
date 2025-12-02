@@ -368,51 +368,38 @@ uninstall() {
         exit 0
     fi
 
-    # Rassembler tous les fichiers et dossiers à supprimer
-    to_delete=()
-    for dir in "$APP_DIR" "$APP_GIT"; do
-        if [[ -d "$dir" ]]; then
-            while IFS= read -r item; do
-                to_delete+=("$item")
-            done < <(find "$dir" -mindepth 1)  # récupère tous les fichiers et sous-dossiers
-        fi
-    done
+    # Fonction pour supprimer et compter les fichiers
+    delete_with_progress() {
+        local dir="$1"
+        # Récupère tous les fichiers/dossiers récursivement
+        mapfile -t items < <(find "$dir" -mindepth 1)
+        local total=${#items[@]}
+        (( total == 0 )) && return
 
-    total=${#to_delete[@]}
-    if (( total == 0 )); then
-        printf "%s\n" "Aucun fichier ou dossier trouvé pour désinstallation."
-        exit 0
-    fi
+        printf "%s\n" "Désinstallation de $dir ($total éléments)..."
 
-    printf "%s\n" "Désinstallation du Programme ($total éléments)..."
+        local count=0
+        for item in "${items[@]}"; do
+            rm -rf "$item" 2>/dev/null
+            ((count++))
+            percent=$(( count * 100 / total ))
+            printf "\rProgression : [%-50s] %d%%" "$(printf '%0.s#' $(seq 1 $((percent / 2))))" "$percent"
+        done
+        printf "\n"
 
-    # Supprimer les fichiers/dossiers avec barre de progression
-    count=0
-    for item in "${to_delete[@]}"; do
-        if [[ -f "$item" ]]; then
-            rm -f "$item"
-        elif [[ -d "$item" ]]; then
-            rm -rf "$item"
-        fi
-        ((count++))
-        percent=$(( count * 100 / total ))
-        printf "\rProgression : [%-50s] %d%%" "$(printf '%0.s#' $(seq 1 $((percent / 2))))" "$percent"
-    done
-    printf "\n"
+        # Supprime le dossier racine après avoir vidé son contenu
+        rm -rf "$dir" 2>/dev/null
+    }
 
-    # Supprimer les dossiers racines si ils existent encore
-    for dir in "$APP_DIR" "$APP_GIT"; do
-        [[ -d "$dir" ]] && rm -rf "$dir"
-    done
+    # Supprimer les dossiers
+    [[ -d "$APP_DIR" ]] && delete_with_progress "$APP_DIR"
+    [[ -d "$APP_GIT" ]] && delete_with_progress "$APP_GIT"
 
-    [[ -d "$APP_DIR" ]] && rm -rf "$APP_DIR"
-    [[ -d "$APP_GIT" ]] && rm -rf "$APP_GIT"
     printf "%s\n" "Service-Overtchat a été désinstallé avec succès."
     printf "%s\n" "Merci d'avoir utilisé Service-Overtchat by SerVuS"
     printf "%s\n" "Pour nous retrouver : http://service.overtchat.free.fr"
     exit 0
 }
-
 
 # Option 7
 setup_sql() {
