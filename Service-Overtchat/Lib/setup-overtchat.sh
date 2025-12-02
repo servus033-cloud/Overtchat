@@ -93,8 +93,9 @@ load_config() {
     if [[ -z "${conf[over]}" ]]; then
         printf "%s\n" "Fichier de configuration introuvable. Veuillez installer correctement le programme."
         return 1
+    else
+        source "${conf[over]}"
     fi
-    source "${conf[over]}"
     return 0
 }
 
@@ -124,17 +125,6 @@ prompt_continue() {
         echo "Abandon."
         exit 0
     fi
-}
-
-control_install_folders() {
-    local folders="Service-Overtchat Build Unix IriX Windows Lib Conf Eggdrop Logs"
-    for dir in $folders; do
-        if ! find "$HOME" -type d -name "$dir" -print -quit 2>/dev/null >/dev/null; then
-            printf "%s\n" "Dossier $dir introuvable. Veuillez installer correctement le programme."
-            return 1
-        fi
-    done
-    return 0
 }
 
                                         #############################
@@ -170,10 +160,7 @@ funct_user() {
 
 # Option 3
 updates() {
-    control_install_folders || return 1
-    load_config || return 1
-
-                                # Mise à jour Git #
+# Mise à jour Git #
 
     APP_DIR="HOME/Service-Overtchat"
     conf[git]=$(find "$APP_DIR" -type d -name ".git" -print -quit 2>/dev/null)
@@ -206,11 +193,10 @@ updates() {
 
 # Option 4
 upgrade() {
-    # Vérifie que les dossiers essentiels sont présents
-    control_install_folders || return 1
-
-    # Cherche le fichier de configuration
-    load_config || return 1
+# Gestion auto mise à jour #
+    if ! load_config; then
+        return 1
+    fi
     
     printf "%s\n" "Version actuelle : ${numeric[version]}, mise à jour automatique : ${numeric[autoupdate]}"
 
