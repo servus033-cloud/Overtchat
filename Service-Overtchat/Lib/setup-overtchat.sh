@@ -183,9 +183,12 @@ updates() {
     REMOTE=$(git rev-parse origin/$BRANCH)
 
     if [[ "$LOCAL" != "$REMOTE" ]]; then
-        printf "%s\n" "Nouvelle version détectée !"
-        git pull origin "$BRANCH"
-        printf "%s\n" "Mise à jour terminée."
+        printf "%s\n" "Une Nouvelle version a été détectée !."
+        if prompt_yn "Voulez-vous mettre à jour maintenant ? (Y/N) : "; then
+            upgrade
+        else
+            printf "%s\n" "Mise à jour annulée par l'utilisateur."
+        fi
     else
         printf "%s\n" "Déjà à jour."
     fi
@@ -197,10 +200,11 @@ upgrade() {
     if ! load_config; then
         return 1
     fi
-    
+
     printf "%s\n" "Version actuelle : ${numeric[version]}, mise à jour automatique : ${numeric[autoupdate]}"
 
-    REPO_DIR="$HOME/Overtchat/Service-Overtchat"
+    REPO_DIR="$HOME/Service-Overtchat"
+    conf[git]=$(find "$REPO_DIR" -type d -name ".git" -print -quit 2>/dev/null)
     if [[ ! -d "$REPO_DIR/.git" ]]; then
         printf "%s\n" "Répertoire Git introuvable dans $REPO_DIR. Analyse dossier secours..."
     elif [[ -d "/tmp/.Overtchat/.git" ]]; then
@@ -447,15 +451,15 @@ cat <<'PANEL'
 
 Veuillez faire vôtre choix :
 
-        0) Quitter le programme : Quitter le panel et revenir au terminal
-        1) Voir les logs du système : Affiche le contenu du fichier de log Systême Service-Overtchat et les logs des autres Services
-        2) Info / Ajouter / Supprimer un User > : Agit à la base de données MariaDB < Hors panel actuel >
-        3) Vérifier les mises à jour : Fait via GitHub si disponible
-        4) Activer/Désactiver mises à jour : Active ou désactive la gestion automatique des mises à jour
-        5) Installer le programme Service-Overtchat : Lance le script d'installation complet
-        6) Désinstaller le programme entièrement : Action irréversible
-        7) Installation/Paramètre MariaDB : Lance le script de configuration de la base de données MariaDB
-        8) Initialisation dépôt Git : Re-clonage du dépôt Git
+        0) Quitter le programme : Quitter le panel et revenir au terminal ( opérationnelle )
+        1) Voir les logs du système : Affiche le contenu du fichier de log Systême Service-Overtchat et les logs des autres Services ( presque opérationnelle )
+        2) ( Mode modifié : en travaux )
+        3) Vérifier les mises à jour : Fait via GitHub si disponible ( bientôt opérationnelle)
+        4) Activer/Désactiver mises à jour : Active ou désactive la gestion automatique des mises à jour ( en travaux )
+        5) Installer le programme Service-Overtchat : Lance le script d'installation complet ( en cours de finition )
+        6) Désinstaller le programme entièrement : Action irréversible ( opérationnelle)
+        7) Installation/Paramètre MariaDB : Lance le script de configuration de la base de données MariaDB ( en travaux )
+        8) Initialisation dépôt Git : Re-clonage du dépôt Git ( opérationnelle uniquement si dépôt corrompu )
 PANEL
 
     else
@@ -492,8 +496,7 @@ panels_loop() {
             prompt_continue
             ;;
         4)
-            upgrade
-            prompt_continue
+            continue
             ;;
         5)
             install
