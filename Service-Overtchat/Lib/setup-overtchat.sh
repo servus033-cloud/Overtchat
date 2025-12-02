@@ -162,8 +162,10 @@ funct_user() {
 updates() {
 # Mise à jour Git #
 
+    # dossier par défaut
     APP_DIR="HOME/Service-Overtchat"
     conf[git]=$(find "$APP_DIR" -type d -name ".git" -print -quit 2>/dev/null)
+
     if [[ -z "${conf[git]}" ]]; then
         printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Recherche secondaire..."
     elif [[ -d "/tmp/.Overtchat/.git" ]]; then
@@ -176,7 +178,7 @@ updates() {
 
     BRANCH="main"
 
-    cd "$APP_DIR" || exit 1
+    cd "$APP_DIR" || echo "Erreur chargement $APP_DIR"; exit 1
 
     git fetch origin "$BRANCH"
     LOCAL=$(git rev-parse HEAD)
