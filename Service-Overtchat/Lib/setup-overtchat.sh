@@ -363,44 +363,54 @@ uninstall() {
     APP_GIT="/tmp/.Overtchat"
 
     printf "%s\n" "Attention : Cette action supprimera entièrement Service-Overtchat et toutes ses données associées."
-     if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
+    if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
         printf "%s\n" "Annulation de la désinstallation"
         exit 0
     fi
 
-    if [[ -d "$APP_DIR" ]]; then
-        printf "%s\n" "Désinstallation du Programme"
-        for dir in $APP_DIR; do
-            if [[ -f "$dir" ]]; then
-                printf "%s\n" "Suppression du fichier $dir"
-                rm -f "$dir"
-            fi
-            if [[ -d "$dir" ]]; then
-                printf "%s\n" "Suppression du dossier $dir"
-                rm -r "$dir"
-            fi
-        done
+    # Rassembler tous les fichiers et dossiers à supprimer
+    to_delete=()
+    for dir in "$APP_DIR" "$APP_GIT"; do
+        if [[ -d "$dir" ]]; then
+            while IFS= read -r item; do
+                to_delete+=("$item")
+            done < <(find "$dir" -mindepth 1)  # récupère tous les fichiers et sous-dossiers
+        fi
+    done
+
+    total=${#to_delete[@]}
+    if (( total == 0 )); then
+        printf "%s\n" "Aucun fichier ou dossier trouvé pour désinstallation."
+        exit 0
     fi
 
-    if [[ -d "$APP_GIT" ]]; then
-        printf "%s\n" "Désinstallation du Programme"
-        for dir in $APP_GIT; do
-            if [[ -f "$dir" ]]; then
-                printf "%s\n" "Suppression du fichier $dir"
-                rm -f "$dir"
-            fi
-            if [[ -d "$dir" ]]; then
-                printf "%s\n" "Suppression du dossier $dir"
-                rm -r "$dir"
-            fi
-        done
-    fi
+    printf "%s\n" "Désinstallation du Programme ($total éléments)..."
 
-    printf "%s\n" "Service-Overtchat a été désinstallé avec succès"
+    # Supprimer les fichiers/dossiers avec barre de progression
+    count=0
+    for item in "${to_delete[@]}"; do
+        if [[ -f "$item" ]]; then
+            rm -f "$item"
+        elif [[ -d "$item" ]]; then
+            rm -rf "$item"
+        fi
+        ((count++))
+        percent=$(( count * 100 / total ))
+        printf "\rProgression : [%-50s] %d%%" "$(printf '%0.s#' $(seq 1 $((percent / 2))))" "$percent"
+    done
+    printf "\n"
+
+    # Supprimer les dossiers racines si ils existent encore
+    for dir in "$APP_DIR" "$APP_GIT"; do
+        [[ -d "$dir" ]] && rm -rf "$dir"
+    done
+
+    printf "%s\n" "Service-Overtchat a été désinstallé avec succès."
     printf "%s\n" "Merci d'avoir utilisé Service-Overtchat by SerVuS"
     printf "%s\n" "Pour nous retrouver : http://service.overtchat.free.fr"
     exit 0
 }
+
 
 # Option 7
 setup_sql() {
@@ -545,7 +555,6 @@ panels_loop() {
             ;;
         6)
             uninstall
-            prompt_continue
             ;;
         7)
             setup_sql
