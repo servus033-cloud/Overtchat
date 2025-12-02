@@ -167,46 +167,35 @@ funct_user() {
 
 # Option 3
 updates() {
-    # Mise à jour Git #
-
-    # 1) Dossier principal
     APP_DIR="$HOME/Service-Overtchat"
-
-    if [[ -d "$APP_DIR/.git" ]]; then
-        printf "%s\n" "Répertoire Git trouvé dans $APP_DIR."
-    else
-        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Recherche secondaire..."
-
-        # 2) Dossier de secours
-        local fallback="/tmp/.Overtchat"
-
-        if [[ -d "$fallback/.git" ]]; then
-            printf "%s\n" "Répertoire Git trouvé dans $fallback. Utilisation de ce dépôt pour les mises à jour."
-            APP_DIR="$fallback"
-        else
-            printf "%s\n" "Répertoire Git introuvable dans $APP_DIR et $fallback. Impossible de vérifier les mises à jour."
-            return 1
-        fi
-    fi
-
-    # Sélection de la branche
     BRANCH="main"
+    FORCE_UPDATE=0
 
-    # Aller dans le dépôt sélectionné
-    if ! cd "$APP_DIR"; then
-        printf "%s\n" "Erreur : impossible de charger le dossier $APP_DIR"
+    # Vérifie si un argument --force est passé
+    for arg in "$@"; do
+        [[ "$arg" == "--force" ]] && FORCE_UPDATE=1
+    done
+
+    if [[ ! -d "$APP_DIR/.git" ]]; then
+        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR."
         return 1
     fi
 
+    cd "$APP_DIR" || { echo "Erreur chargement $APP_DIR"; return 1; }
 
-    git fetch origin "$BRANCH"
+    git fetch origin "$BRANCH" >/dev/null 2>&1
     LOCAL=$(git rev-parse HEAD)
     REMOTE=$(git rev-parse origin/$BRANCH)
 
-    if [[ "$LOCAL" != "$REMOTE" ]]; then
-        printf "%s\n" "Une nouvelle version a été détectée !"
+    if [[ "$LOCAL" != "$REMOTE" || $FORCE_UPDATE -eq 1 ]]; then
+        if [[ $FORCE_UPDATE -eq 1 ]]; then
+            printf "%s\n" "Mise à jour forcée activée !"
+        else
+            printf "%s\n" "Nouvelle version détectée !"
+        fi
+
         if prompt_yn "Voulez-vous mettre à jour maintenant ? (Y/N) : "; then
-            upgrade
+            upgrade $FORCE_UPDATE
         else
             printf "%s\n" "Mise à jour annulée par l'utilisateur."
         fi
@@ -215,23 +204,28 @@ updates() {
     fi
 }
 
-# Option 4
 upgrade() {
-    # Chargement config
+    FORCE=${1:-0}
+
     if ! load_config; then
         return 1
     fi
 
-    printf "%s\n" "Version actuelle : ${numeric[version]}, Mise à jour automatique : ${numeric[autoupdate]}"
+    printf "%s\n" "Version actuelle : ${numeric[version]}, mise à jour automatique : ${numeric[autoupdate]}"
 
-    # Aller dans APP_DIR
-    if ! cd "$APP_DIR"; then
-        printf "%s\n" "Erreur : impossible de charger le dossier $APP_DIR"
-        return 1
+    cd "$APP_DIR" || { echo "Erreur chargement $APP_DIR"; return 1; }
+
+    if [[ "$FORCE" -eq 1 ]]; then
+        # Force la mise à jour : écrase la branche locale
+        printf "%s\n" "Récupération forcée de la dernière version depuis Git..."
+        git fetch origin main >/dev/null 2>&1
+        git reset --hard origin/main >/dev/null 2>&1
+    else
+        git pull origin main >/dev/null 2>&1 || {
+            printf "%s\n" "Erreur lors de la mise à jour depuis Git."
+            return 1
+        }
     fi
-
-    # Fichier config (défini UNE SEULE FOIS)
-    conf_file="$APP_DIR/Conf/overtchat.conf"
 
     # Récupère la dernière version via Git tags
     git fetch --tags origin >/dev/null 2>&1
@@ -244,35 +238,21 @@ upgrade() {
 
     printf "%s\n" "Dernière version disponible : $latest_version"
 
-    # Comparaison avec la version locale
-    if [[ "$latest_version" != "${numeric[version]}" ]]; then
-        printf "%s\n" "Nouvelle version détectée ! Mise à jour en cours..."
+    # Mise à jour du fichier de configuration
+    conf_file="$APP_DIR/Conf/overtchat.conf"
+    build_date=$(date '+%Y-%m-%d %H:%M:%S')
+    check_date=$(date '+%Y-%m-%d %H:%M:%S')
 
-        # Pull depuis Git
-        git pull origin main >/dev/null 2>&1 || {
-            printf "%s\n" "Erreur lors de la mise à jour depuis Git."
-            return 1
-        }
+    sed -i "s|numeric\[\"version\"\]=\"[^\"]*\"|numeric[\"version\"]=\"$latest_version\"|" "$conf_file"
+    sed -i "s|numeric\[\"build\"\]=\"[^\"]*\"|numeric[\"build\"]=\"$build_date\"|" "$conf_file"
+    sed -i "s|numeric\[\"check\"\]=\"[^\"]*\"|numeric[\"check\"]=\"$check_date\"|" "$conf_file"
 
-        # Mise à jour du fichier de configuration
-        build_date=$(date '+%Y-%m-%d %H:%M:%S')
-        check_date="$build_date"
+    printf "%s\n" "Mise à jour terminée vers la version $latest_version."
 
-        sed -i "s|numeric\[\"version\"\]=\"[^\"]*\"|numeric[\"version\"]=\"$latest_version\"|" "$conf_file"
-        sed -i "s|numeric\[\"build\"\]=\"[^\"]*\"|numeric[\"build\"]=\"$build_date\"|" "$conf_file"
-        sed -i "s|numeric\[\"check\"\]=\"[^\"]*\"|numeric[\"check\"]=\"$check_date\"|" "$conf_file"
-
-        printf "%s\n" "Mise à jour terminée vers la version $latest_version."
-        
-        # Relancement si autoupdate actif
-        if [[ "${numeric[autoupdate]}" -eq 1 ]]; then
-            printf "%s\n" "Relancement automatique du programme..."
-            exec "$APP_DIR/bin/Lib/$0"
-        fi
-    else
-        printf "%s\n" "Le programme est déjà à jour (version ${numeric[version]})."
-        check_date=$(date '+%Y-%m-%d %H:%M:%S')
-        sed -i "s|numeric\[\"check\"\]=\"[^\"]*\"|numeric[\"check\"]=\"$check_date\"|" "$conf_file"
+    # Relancer automatiquement si autoupdate activé
+    if [[ "${numeric[autoupdate]}" -eq 1 ]]; then
+        printf "%s\n" "Relancement automatique du programme..."
+        exec "$APP_DIR/bin/Lib/./$0"
     fi
 }
 
