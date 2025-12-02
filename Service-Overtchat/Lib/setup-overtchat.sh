@@ -193,10 +193,11 @@ updates() {
     BRANCH="main"
 
     # Aller dans le dépôt sélectionné
-    cd "$APP_DIR" || { 
-        echo "Erreur chargement $APP_DIR"
+    if ! cd "$APP_DIR"; then
+        printf "%s\n" "Erreur : impossible de charger le dossier $APP_DIR"
         return 1
-    }
+    fi
+
 
     git fetch origin "$BRANCH"
     LOCAL=$(git rev-parse HEAD)
@@ -221,13 +222,13 @@ upgrade() {
         return 1
     fi
 
-    printf "%s\n" "Version actuelle : ${numeric[version]}, mise à jour automatique : ${numeric[autoupdate]}"
+    printf "%s\n" "Version actuelle : ${numeric[version]}, Mise à jour automatique : ${numeric[autoupdate]}"
 
     # Aller dans APP_DIR
-    cd "$APP_DIR" || { 
-        echo "Erreur chargement $APP_DIR"
+    if ! cd "$APP_DIR"; then
+        printf "%s\n" "Erreur : impossible de charger le dossier $APP_DIR"
         return 1
-    }
+    fi
 
     # Fichier config (défini UNE SEULE FOIS)
     conf_file="$APP_DIR/Conf/overtchat.conf"
