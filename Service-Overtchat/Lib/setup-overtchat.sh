@@ -465,9 +465,12 @@ info_prog() {
     }
 
     # Version Git
+    ADD_DIR="/tmp/.Overtchat"
     git -C "$APP_DIR" fetch --tags >/dev/null 2>&1
     REMOTE=$(git -C "$APP_DIR" describe --tags --abbrev=0 2>/dev/null)
-    [[ -n "$REMOTE" ]] && printf "%s\n" "Version du programme Git : $REMOTE"
+    [[ -n "$REMOTE" ]] && 
+    printf "%s\n" "Version du programme Git : $REMOTE" \
+    printf "%s\n" "Mise à jour disponible : $([[ ${numeric[version]} != $REMOTE ]] && echo Oui || echo Non)"
 
     # Options update/autoupdate
     [[ -v numeric[update] ]] &&
