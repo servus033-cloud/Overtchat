@@ -181,7 +181,7 @@ updates() {
         APP_DIR="/tmp/.Overtchat"
     elif [[ ! -d "$APP_DIR/.git" ]]; then
         printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Annulation mise à jour"
-        exec bash $0
+        exec "$APP_DIR/bin/Lib/./$0"
         return 1
     fi
 
@@ -205,6 +205,8 @@ updates() {
         fi
     else
         printf "%s\n" "Déjà à jour."
+        clear
+        sleep 2
     fi
 }
 
@@ -253,6 +255,8 @@ upgrade() {
 
     printf "%s\n" "Mise à jour terminée vers la version $latest_version."
 
+    # Installation suite à la mise à jour
+
     # Relancer automatiquement si autoupdate activé
     if [[ "${numeric[autoupdate]}" -eq 1 ]]; then
         printf "%s\n" "Relancement automatique du programme..."
@@ -294,7 +298,7 @@ install() {
     # Si pas encore installé
     if [[ ! -d "$APP_DIR/.git" ]]; then
         printf "%s\n" "Clonage du dépôt..."
-        git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Erreur lors du clonage"; exit 1; }
+        git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Erreur lors du clonage" >&2; exit 1; }
 
         # Rendre les scripts exécutables
         for dir in "$APP_DIR/Install/bin" "$APP_DIR/Service-Overtchat/Lib"; do
@@ -304,8 +308,7 @@ install() {
                     printf "%s\n" "Scripts .sh trouvés dans $dir"
                     find "$dir" -type f -name "*.sh" -exec chmod +x {} \;
                 else
-                    printf "%s\n" "Aucun script .sh trouvé dans $dir. Installation impossible."
-                    exit 1
+                    printf "%s\n" "Aucun script .sh trouvé dans $dir. Installation impossible." >&2; exit 1
                 fi
             fi
         done
@@ -315,12 +318,12 @@ install() {
         makefile="$APP_DIR/Install/MAKEFILE"
         if [[ -f "$makefile" ]]; then
             printf "%s\n" "Lancement de la compilation..."
-            make -f "$makefile" "$MAKEVAR" || { printf "%s\n" "Erreur lors de la compilation"; exit 1; }
+            make -f "$makefile" "$MAKEVAR" || { printf "%s\n" "Erreur lors de la compilation" >&2; exit 1; }
             printf "%s\n" "Compilation terminée avec succès."
 
             if [[ -f "$HOME/Service-Overtchat.tar.gz" ]]; then
                 printf "%s\n" "Déploiement de l'archive..."
-                tar -xzf "$HOME/Service-Overtchat.tar.gz" -C "$HOME/" || { printf "%s\n" "Erreur lors du déploiement"; exit 1; }
+                tar -xzf "$HOME/Service-Overtchat.tar.gz" -C "$HOME/" || { printf "%s\n" "Erreur lors du déploiement" >&2; exit 1; }
                 printf "%s\n" "Déploiement terminé avec succès."
                 rm -f "$HOME/Service-Overtchat.tar.gz"
                 printf "%s\n" "Installation terminée avec succès."
@@ -330,11 +333,11 @@ install() {
                 rm -f $HOME/$0
                 ./setup-overtchat
             else
-                printf "%s\n" "Archive introuvable après compilation. Installation annulée."
+                printf "%s\n" "Archive introuvable après compilation. Installation annulée." >&2
                 exit 1
             fi
         else
-            printf "%s\n" "Fichier MAKEFILE introuvable. Impossible de compiler."
+            printf "%s\n" "Fichier MAKEFILE introuvable. Impossible de compiler." >&2
             exit 1
         fi
         exit 0
@@ -389,8 +392,7 @@ uninstall() {
 setup_sql() {
     conf[over]=$(find "$HOME/${folders[dir_lib]}" -type f -name "$(basename -- "${shell[build_sql]}")" -print -quit 2>/dev/null)
     if [[ -z "${conf[over]}" ]]; then
-        printf "%s\n" "Fichier ${shell[build_sql]} introuvable. Veuillez installer le programme d'abord."
-        exit 1
+        printf "%s\n" "Fichier ${shell[build_sql]} introuvable. Veuillez installer le programme d'abord." >&2; exit 1
     fi
     bash "${conf[over]}"
 }
@@ -404,8 +406,58 @@ init_git() {
     if [[ -d "$APP_DIR" ]]; then
         rm -rf "$APP_DIR"
     fi
-    git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Erreur lors du clonage"; exit 1; }
+    git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Erreur lors du clonage" >&2; exit 1; }
     printf "%s\n" "Dépôt Git initialisé avec succès."
+}
+
+# Option 9
+info_prog() {
+    # scan dossiers
+    APP_DIR="$HOME/Service/Overtchat"
+    if [[ ! -d "$APP_DIR" ]]; then
+        printf "%s\n" "Une anomalie a été détectée : $APP_DIR non trouvé. Scan dossier 1/3 ..." >&2
+        APP_DIR="/tmp/.Overtchat"
+    elif [[ ! -d "$APP_DIR" ]]; then
+        printf "%s\n" "Une anomalie a été détectée : $APP_DIR non trouvé. Scan dossier 2/3 ..." >&2
+        APP_DIR="/tmp/.Overtchat/.git"
+    elif [[ ! -d "$APP_DIR" ]]; then
+        printf "%s\n" "Une anomalie a été détectée : $APP_DIR non trouvé. Scan dossier 3/3 ... Erreur Fatal" >&2; return 1
+    fi
+
+    # scan fichiers
+    APP_FILE="$HOME/Service-Overtchat/Conf/overtchat.conf"
+    if [[ ! -d "$APP_DIR" ]]; then
+        printf "%s\n" "Une anomalie a été détectée : $APP_FILE non trouvé. Scan fichier 1/1 ... Erreur Fatal" >&2; return 1
+    fi
+
+    # on controle declare
+    scan_declare="over info web numeric folders files shell server prog"
+    scan_app="$(compgen -v) | grep $scan_declare"
+    for x in "$scan_app"; do
+        if [[ -z "$x" ]]; then
+            if ! source "$APP_FILE"; then
+                printf "%s\n" "Chargement fichier $APP_FILE impossible" >&2; return 1
+            fi
+        fi
+    done
+
+    # si tout chargé, on affiche les données
+    [[ -v numeric[version] ]] && printf "%s\n" "Version du programme Actuel : ${numeric[version]}"
+    git fetch origin "$BRANCH" >/dev/null 2>&1
+    LOCAL=$(git rev-parse HEAD)
+    REMOTE=$(git rev-parse origin/$BRANCH)
+    if [[ -v numeric[update] ]]; then
+        [[ ${numeric[update]} -eq 1 ]] && printf "%s\n" "Mise à jour : Activé" || { 
+            printf "%s\n" "Mise à jour : Désactivé"
+        }
+    fi
+
+    if [[ -v numeric[autoupdate] ]]; then
+        [[ ${numeric[autoupdate]} -eq 1 ]] && printf "%s\n" "Mise à jour Automatique : Activé" || { 
+            printf "%s\n" "Mise à jour Automatique : Désactivé"
+        }
+    fi
+
 }
 
 aff_panel() {
