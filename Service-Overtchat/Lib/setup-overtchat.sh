@@ -177,7 +177,11 @@ updates() {
     done
 
     if [[ ! -d "$APP_DIR/.git" ]]; then
-        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR."
+        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Dossier secours..."
+        APP_DIR="/tmp/.Overtchat"
+    elif [[ ! -d "$APP_DIR/.git" ]]; then
+        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Annulation mise à jour"
+        exec bash $0
         return 1
     fi
 
@@ -404,8 +408,7 @@ init_git() {
     printf "%s\n" "Dépôt Git initialisé avec succès."
 }
 
-#!/usr/bin/env bash
-
+aff_panel() {
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
@@ -493,10 +496,12 @@ cat <<'PANEL'
 PANEL
     fi
 fi
+}
 
 panels_loop() {
     local choice
     while true; do
+    aff_panel
         read -rp "Entrez votre choix (0-7) : " choice
         case "$choice" in
         0)
@@ -505,33 +510,31 @@ panels_loop() {
             ;;
         1)
             view_logs
-            prompt_continue
             ;;
         2)
             funct_user
-            prompt_continue
             ;;
         3)
             updates
-            prompt_continue
             ;;
         4)
             continue
             ;;
         5)
             install
-            prompt_continue
             ;;
         6)
             uninstall
             ;;
         7)
             setup_sql
-            prompt_continue
+            clear
+            aff_panel
             ;;
         8)
             init_git
-            prompt_continue
+            clear
+            aff_panel
             ;;
         *)
             printf "%s\n" "Choix invalide. Veuillez réessayer."
