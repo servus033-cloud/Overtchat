@@ -412,52 +412,69 @@ init_git() {
 
 # Option 9
 info_prog() {
-    # scan dossiers
-    APP_DIR="$HOME/Service/Overtchat"
-    if [[ ! -d "$APP_DIR" ]]; then
-        printf "%s\n" "Une anomalie a été détectée : $APP_DIR non trouvé. Scan dossier 1/3 ..." >&2
-        APP_DIR="/tmp/.Overtchat"
-    elif [[ ! -d "$APP_DIR" ]]; then
-        printf "%s\n" "Une anomalie a été détectée : $APP_DIR non trouvé. Scan dossier 2/3 ..." >&2
-        APP_DIR="/tmp/.Overtchat/.git"
-    elif [[ ! -d "$APP_DIR" ]]; then
-        printf "%s\n" "Une anomalie a été détectée : $APP_DIR non trouvé. Scan dossier 3/3 ... Erreur Fatal" >&2; return 1
-    fi
+    debug=0
+    dirs=(
+        "$HOME/Service-Overtchat"
+        "/tmp/.Overtchat"
+        "/tmp/.Overtchat/.git"
+    )
 
-    # scan fichiers
+    for dir in "${dirs[@]}"; do
+        [[ -d "$dir" ]] || { 
+            echo "Dossier $dir : introuvable" >&2
+            (( debug-- )) 
+        }
+    done
+
+    [[ $debug -lt 0 ]] && { 
+        echo "Une anomalie détectée. Veuillez refaire l'installation !" >&2
+        return 1
+    }
+
+    # Scan fichier conf
     APP_FILE="$HOME/Service-Overtchat/Conf/overtchat.conf"
-    if [[ ! -d "$APP_DIR" ]]; then
-        printf "%s\n" "Une anomalie a été détectée : $APP_FILE non trouvé. Scan fichier 1/1 ... Erreur Fatal" >&2; return 1
+    if [[ -f "$APP_FILE" ]]; then
+        printf "%s\n" "Fichier $APP_FILE trouvé" >/dev/null
+    else
+        printf "%s\n" "Fichier $APP_FILE non trouvé. Erreur Fatal" >&2
+        return 1
     fi
 
-    # on controle declare
-    scan_declare="over info web numeric folders files shell server prog"
-    scan_app="$(compgen -v) | grep $scan_declare"
-    for x in "$scan_app"; do
-        if [[ -z "$x" ]]; then
-            if ! source "$APP_FILE"; then
-                printf "%s\n" "Chargement fichier $APP_FILE impossible" >&2; return 1
-            fi
+    # Variables attendues
+    needed_vars=(over info web numeric folders files shell server prog)
+
+    # Vérification chargement
+    need_source=0
+    for var in "${needed_vars[@]}"; do
+        if ! compgen -v | grep -qx "$var"; then
+            need_source=1
+            break
         fi
     done
 
-    # si tout chargé, on affiche les données
-    [[ -v numeric[version] ]] && printf "%s\n" "Version du programme Actuel : ${numeric[version]}"
-    git fetch origin "$BRANCH" >/dev/null 2>&1
-    LOCAL=$(git rev-parse HEAD)
-    REMOTE=$(git rev-parse origin/$BRANCH)
-    if [[ -v numeric[update] ]]; then
-        [[ ${numeric[update]} -eq 1 ]] && printf "%s\n" "Mise à jour : Activé" || { 
-            printf "%s\n" "Mise à jour : Désactivé"
-        }
+    if (( need_source == 1 )); then
+        if ! source "$APP_FILE"; then
+            printf "%s\n" "Chargement fichier $APP_FILE impossible" >&2
+            return 1
+        fi
     fi
 
-    if [[ -v numeric[autoupdate] ]]; then
-        [[ ${numeric[autoupdate]} -eq 1 ]] && printf "%s\n" "Mise à jour Automatique : Activé" || { 
-            printf "%s\n" "Mise à jour Automatique : Désactivé"
-        }
-    fi
+    # Affichage version locale
+    [[ -v numeric[version] ]] && {
+        printf "%s\n" "Version du programme Actuel : ${numeric[version]}"
+    }
 
+    # Version Git
+    git -C "$APP_DIR" fetch --tags >/dev/null 2>&1
+    REMOTE=$(git -C "$APP_DIR" describe --tags --abbrev=0 2>/dev/null)
+    [[ -n "$REMOTE" ]] && printf "%s\n" "Version du programme Git : $REMOTE"
+
+    # Options update/autoupdate
+    [[ -v numeric[update] ]] &&
+        printf "%s\n" "Mise à jour : $([[ ${numeric[update]} -eq 1 ]] && echo Activé || echo Désactivé)"
+
+    [[ -v numeric[autoupdate] ]] &&
+        printf "%s\n" "Mise à jour Automatique : $([[ ${numeric[autoupdate]} -eq 1 ]] && echo Activé || echo Désactivé)"
 }
 
 aff_panel() {
@@ -535,6 +552,7 @@ Veuillez faire vôtre choix :
         6) Désinstaller le programme entièrement : Action irréversible ( opérationnelle)
         7) Installation/Paramètre MariaDB : Lance le script de configuration de la base de données MariaDB ( en travaux )
         8) Initialisation dépôt Git : Re-clonage du dépôt Git ( opérationnelle uniquement si dépôt corrompu )
+        9) Information global Service-Overtchat ( en développement )
 PANEL
 
     else
