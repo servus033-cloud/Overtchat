@@ -6,6 +6,21 @@ else
     set -euo pipefail
 fi
 
+# Dossier généraux
+INSTALL_TMP="/tmp/.Overtchat" # dossier git
+INSTALL_BRANCH="main" # branch git
+
+INSTALL_HOME="$HOME/Service-Overtchat" # dossier install
+INSTALL_SERVER="$HOME/Serveur-Overtchat" # dossier serveur
+
+INSTALL_BIN="$INSTALL_HOME/bin/Lib" # librairie shell
+REPO_URL="https://github.com/servus033-cloud/Overtchat.git" # lien du dépot
+
+# Compilation
+MAKEFILE="$INSTALL_TMP/Install/MAKEFILE"
+MAKEVAR="release"
+
+
                                         # ────────────────────────────── #
                                         #   Initialisation du script
                                         # ────────────────────────────── #
@@ -77,11 +92,11 @@ log() {
     timestamp="$(date "+%Y-%m-%d %H:%M:%S")"
     logfile="logs.dat"
 
-    conf[log]=$(find "$HOME/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null)
+    conf[log]=$(find "$INSTALL_HOME/Logs" -type f -name "$logfile" -print -quit 2>/dev/null)
     if [[ -n "${conf[log]}" ]]; then
-        logfiles="$HOME/Service-Overtchat/Logs/$logfile"
+        logfiles="$INSTALL_HOME/Logs/$logfile"
     else
-        logfiles="/tmp/.Overtchat/Service-Overtchat/Logs/$logfile"
+        logfiles="$INSTALL_TMP/Service-Overtchat/Logs/$logfile"
     fi
 
     txt="[$timestamp] $msg"
@@ -90,7 +105,7 @@ log() {
 
 load_config() {
     local conf_path
-    conf_path=$(find "$HOME/Service-Overtchat/Conf" \
+    conf_path=$(find "$INSTALL_HOME/Conf" \
                 -type f -name "overtchat.conf" -print -quit 2>/dev/null)
 
     if [[ -z "$conf_path" ]]; then
@@ -142,10 +157,10 @@ prompt_continue() {
 view_logs() {
     logfile="logs.dat"
 
-    if find "$HOME/Overtchat/Service-Overtchat/Logs" -type f -name "$logfile" -print -quit 2>/dev/null; then
-        logfile="$HOME/Overtchat/Service-Overtchat/Logs/$logfile"
+    if find "$INSTALL_HOME/Logs" -type f -name "$logfile" -print -quit 2>/dev/null; then
+        logfile="$INSTALL_HOME/Logs/$logfile"
     else
-        logfile="/tmp/log~overtchat.dat"
+        logfile="$INSTALL_TMP/Service-Overtchat/Logs/$logfile"
     fi
 
     printf "%s\n" "Contenu du fichier de logs : $logfile"
@@ -167,8 +182,6 @@ funct_user() {
 
 # Option 3
 updates() {
-    APP_DIR="$HOME/Service-Overtchat"
-    BRANCH="main"
     FORCE_UPDATE=0
 
     # Vérifie si un argument --force est passé
@@ -176,20 +189,17 @@ updates() {
         [[ "$arg" == "--force" ]] && FORCE_UPDATE=1
     done
 
-    if [[ ! -d "$APP_DIR/.git" ]]; then
-        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Dossier secours..."
-        APP_DIR="/tmp/.Overtchat"
-    elif [[ ! -d "$APP_DIR/.git" ]]; then
-        printf "%s\n" "Répertoire Git introuvable dans $APP_DIR. Annulation mise à jour"
-        exec "$APP_DIR/bin/Lib/./$0"
+    if [[ ! -d "$INSTALL_TMP/.git" ]]; then
+        printf "%s\n" "Répertoire Git introuvable dans $INSTALL_TMP. Annulation mise à jour"
+        exec "$INSTALL_BIN/./$0"
         return 1
     fi
 
-    cd "$APP_DIR" || { echo "Erreur chargement $APP_DIR"; return 1; }
+    cd "$INSTALL_TMP" || { echo "Erreur chargement $INSTALL_TMP"; return 1; }
 
-    git fetch origin "$BRANCH" >/dev/null 2>&1
+    git fetch origin "$INSTALL_BRANCH" >/dev/null 2>&1
     LOCAL=$(git rev-parse HEAD)
-    REMOTE=$(git rev-parse origin/$BRANCH)
+    REMOTE=$(git rev-parse origin/$INSTALL_BRANCH)
 
     if [[ "$LOCAL" != "$REMOTE" || $FORCE_UPDATE -eq 1 ]]; then
         if [[ $FORCE_UPDATE -eq 1 ]]; then
@@ -217,18 +227,19 @@ upgrade() {
         return 1
     fi
 
-    printf "%s\n" "Version actuelle : ${numeric[version]}, mise à jour automatique : ${numeric[autoupdate]}"
-
-    cd "$APP_DIR" || { echo "Erreur chargement $APP_DIR"; return 1; }
+    cd "$INSTALL_TMP" || { 
+        echo "Erreur chargement $INSTALL_TMP" >&2
+        return 1 
+    }
 
     if [[ "$FORCE" -eq 1 ]]; then
         # Force la mise à jour : écrase la branche locale
         printf "%s\n" "Récupération forcée de la dernière version depuis Git..."
-        git fetch origin main >/dev/null 2>&1
-        git reset --hard origin/main >/dev/null 2>&1
+        git fetch origin "$INSTALL_BRANCH" >/dev/null 2>&1
+        git reset --hard origin/$INSTALL_BRANCH >/dev/null 2>&1
     else
-        git pull origin main >/dev/null 2>&1 || {
-            printf "%s\n" "Erreur lors de la mise à jour depuis Git."
+        git pull origin $INSTALL_BRANCH >/dev/null 2>&1 || {
+            printf "%s\n" "Erreur lors de la mise à jour depuis Git." >&2
             return 1
         }
     fi
@@ -238,14 +249,14 @@ upgrade() {
     latest_version=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 
     if [[ -z "$latest_version" ]]; then
-        printf "%s\n" "Aucun tag trouvé sur le dépôt. Impossible de déterminer la dernière version."
+        printf "%s\n" "Aucun tag trouvé sur le dépôt. Impossible de déterminer la dernière version." >&2
         return 1
     fi
 
     printf "%s\n" "Dernière version disponible : $latest_version"
 
     # Mise à jour du fichier de configuration
-    conf_file="$APP_DIR/Conf/overtchat.conf"
+    conf_file="$INSTALL_HOME/Conf/overtchat.conf"
     build_date=$(date '+%Y-%m-%d %H:%M:%S')
     check_date=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -255,25 +266,27 @@ upgrade() {
 
     printf "%s\n" "Mise à jour terminée vers la version $latest_version."
 
-    # Installation suite à la mise à jour
+    # Installation suite à la mise à jour : ( à faire )
 
     # Relancer automatiquement si autoupdate activé
     if [[ "${numeric[autoupdate]}" -eq 1 ]]; then
         printf "%s\n" "Relancement automatique du programme..."
-        exec "$APP_DIR/bin/Lib/./$0"
+        exec "$INSTALL_BIN/./$0"
     fi
 }
 
 # Option 5
 install() {
     # Contrôle si installation déjà faite
-    if [[ -d "$HOME/Overtchat" ]] || [[ -d "$HOME/Overtchat/Service-Overtchat" ]]; then
-        printf "%s\n" "Service déjà installé"
+    if [[ -d "$INSTALL_HOME" ]]; then
+        printf "%s\n" "Service déjà installé" >&2
         return 1
     fi
 
     printf "%s\n" "L'installation va commencer. Veuillez suivre les instructions à l'écran."
-    prompt_continue
+
+    sleep 2
+    clear
 
     # Affichage du message d'installation
     mess_install
@@ -283,11 +296,6 @@ install() {
         exit 0
     fi
 
-    APP_DIR="/tmp/.Overtchat"
-    REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
-    BRANCH="main"
-    MAKEVAR="release"
-
     if ! command -v git &>/dev/null; then
         printf "%s\n" "Git n'est pas installé. Impossible d'installer. Veuillez installer Git via : sudo apt install git"
         exit 1
@@ -295,60 +303,59 @@ install() {
 
     printf "%s\n" "Installation [ en cours... ]"
 
-    # Si pas encore installé
-    if [[ ! -d "$APP_DIR/.git" ]]; then
+    # Si dépot git pas encore installé
+    if [[ ! -d "$INSTALL_TMP/.git" ]]; then
         printf "%s\n" "Clonage du dépôt..."
-        git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Erreur lors du clonage" >&2; exit 1; }
-
-        # Rendre les scripts exécutables
-        for dir in "$APP_DIR/Install/bin" "$APP_DIR/Service-Overtchat/Lib"; do
-            if [[ -d "$dir" ]]; then
-                search=$(find "$dir" -type f -name "*.sh" -print -quit 2>/dev/null)
-                if [[ "$search" ]]; then
-                    printf "%s\n" "Scripts .sh trouvés dans $dir"
-                    find "$dir" -type f -name "*.sh" -exec chmod +x {} \;
-                else
-                    printf "%s\n" "Aucun script .sh trouvé dans $dir. Installation impossible." >&2; exit 1
-                fi
-            fi
-        done
-
-        # Compilation
-        cd "$APP_DIR/Install/" || exit 1
-        makefile="$APP_DIR/Install/MAKEFILE"
-        if [[ -f "$makefile" ]]; then
-            printf "%s\n" "Lancement de la compilation..."
-            make -f "$makefile" "$MAKEVAR" || { printf "%s\n" "Erreur lors de la compilation" >&2; exit 1; }
-            printf "%s\n" "Compilation terminée avec succès."
-
-            if [[ -f "$HOME/Service-Overtchat.tar.gz" ]]; then
-                printf "%s\n" "Déploiement de l'archive..."
-                tar -xzf "$HOME/Service-Overtchat.tar.gz" -C "$HOME/" || { printf "%s\n" "Erreur lors du déploiement" >&2; exit 1; }
-                printf "%s\n" "Déploiement terminé avec succès."
-                rm -f "$HOME/Service-Overtchat.tar.gz"
-                printf "%s\n" "Installation terminée avec succès."
-                
-                mkdir $HOME/Service-Overtchat/tmp || exit 1
-                cd $HOME/Service-Overtchat/bin/Lib || exit 1
-                rm -f $HOME/$0
-                ./setup-overtchat
-            else
-                printf "%s\n" "Archive introuvable après compilation. Installation annulée." >&2
-                exit 1
-            fi
-        else
-            printf "%s\n" "Fichier MAKEFILE introuvable. Impossible de compiler." >&2
-            exit 1
+        if ! git clone -b "$INSTALL_BRANCH" "$REPO_URL" "$INSTALL_TMP"; then
+            printf "%s\n" "Erreur lors du clonage" >&2; exit 1
         fi
-        exit 0
     fi
+
+    # Rendre les scripts exécutables
+    for dir in "$INSTALL_TMP/Install/bin" "$INSTALL_TMP/Service-Overtchat/Lib"; do
+        if [[ -d "$dir" ]]; then
+            search=$(find "$dir" -type f -name "*.sh" -print -quit 2>/dev/null)
+            if [[ "$search" ]]; then
+                find "$dir" -type f -name "*.sh" -exec chmod +x {} \;
+            else
+                printf "%s\n" "Aucun script .sh trouvé dans $dir. Installation impossible." >&2; exit 1
+            fi
+        fi
+    done
+
+    if [[ -f "$MAKEFILE" ]]; then
+        printf "%s\n" "Lancement de la compilation..."
+        if ! make -f "$MAKEFILE" "$MAKEVAR"; then
+            printf "%s\n" "Erreur lors de la compilation" >&2; exit 1
+        fi
+        printf "%s\n" "Compilation terminée avec succès."
+    else
+        printf "%s\n" "Fichier MAKEFILE introuvable. Impossible de compiler." >&2; exit 1
+    fi
+
+    if [[ -f "$HOME/Service-Overtchat.tar.gz" ]]; then
+        printf "%s\n" "Déploiement de l'archive..."
+        if ! tar -xzf "$HOME/Service-Overtchat.tar.gz" -C "$HOME/"; then
+            printf "%s\n" "Erreur lors du déploiement" >&2; exit 1
+        fi
+    else
+        printf "%s\n" "Archive introuvable après compilation. Installation annulée." >&2
+        exit 1
+    fi
+
+    printf "%s\n" "Déploiement terminé avec succès."
+    rm -f "$HOME/Service-Overtchat.tar.gz"
+
+    rm -f $HOME/$0
+    printf "%s\n" "Installation terminée avec succès."
+    sleep 2
+    clear
+    exec $INSTALL_BIN/./setup-overtchat
+    exit 0
 }
 
 # Option 6
 uninstall() {
-    APP_DIR="$HOME/Service-Overtchat"
-    APP_GIT="/tmp/.Overtchat"
-
     printf "%s\n" "Attention : Cette action supprimera entièrement Service-Overtchat et toutes ses données associées."
     if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
         printf "%s\n" "Annulation de la désinstallation"
@@ -379,8 +386,9 @@ uninstall() {
     }
 
     # Supprimer les dossiers
-    [[ -d "$APP_DIR" ]] && delete_with_progress "$APP_DIR"
-    [[ -d "$APP_GIT" ]] && delete_with_progress "$APP_GIT"
+    [[ -d "$INSTALL_HOME" ]] && delete_with_progress "$INSTALL_HOME"
+    [[ -d "$INSTALL_TMP" ]] && delete_with_progress "$INSTALL_TMP"
+    [[ -d "$INSTALL_SERVER" ]] && delete_with_progress "$INSTALL_SERVER"
 
     printf "%s\n" "Service-Overtchat a été désinstallé avec succès."
     printf "%s\n" "Merci d'avoir utilisé Service-Overtchat by SerVuS"
@@ -390,23 +398,19 @@ uninstall() {
 
 # Option 7
 setup_sql() {
-    conf[over]=$(find "$HOME/${folders[dir_lib]}" -type f -name "$(basename -- "${shell[build_sql]}")" -print -quit 2>/dev/null)
-    if [[ -z "${conf[over]}" ]]; then
-        printf "%s\n" "Fichier ${shell[build_sql]} introuvable. Veuillez installer le programme d'abord." >&2; exit 1
-    fi
-    bash "${conf[over]}"
+    [[ ! -f "$INSTALL_BIN/sql" ]] && printf "%s\n" "Fichier ${shell[build_sql]} introuvable. Veuillez installer le programme d'abord." >&2; exit 1
+    exec "$INSTALL_BIN/sql"
 }
 
 # Option 8
 init_git() {
     printf "%s\n" "Initialisation du dépôt Git..."
-    APP_DIR="/tmp/.Overtchat"
-    REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
-    BRANCH="main"
-    if [[ -d "$APP_DIR" ]]; then
-        rm -rf "$APP_DIR"
+
+    [[ -d "$INSTALL_TMP" ]] && rm -rf "$INSTALL_TMP"
+    if ! git clone -b "$INSTALL_BRANCH" "$REPO_URL" "$INSTALL_TMP"; then
+        printf "%s\n" "Erreur lors du clonage" >&2; exit 1
     fi
-    git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR" || { printf "%s\n" "Erreur lors du clonage" >&2; exit 1; }
+
     printf "%s\n" "Dépôt Git initialisé avec succès."
 }
 
@@ -414,9 +418,9 @@ init_git() {
 info_prog() {
     debug=0
     dirs=(
-        "$HOME/Service-Overtchat"
-        "/tmp/.Overtchat"
-        "/tmp/.Overtchat/.git"
+        "$INSTALL_TMP"
+        "$INSTALL_HOME"
+        "$INSTALL_TMP/.git"
     )
 
     for dir in "${dirs[@]}"; do
@@ -426,19 +430,16 @@ info_prog() {
         }
     done
 
-    [[ $debug -lt 0 ]] && { 
-        echo "Une anomalie détectée. Veuillez refaire l'installation !" >&2
-        return 1
+    # Scan fichier conf
+    APP_FILE="$INSTALL_HOME/Conf/overtchat.conf"
+    [[ -f "$APP_FILE" ]] || {
+        echo "Fichier $APP_FILE : introuvable" >&2
+        (( debug-- ))
     }
 
-    # Scan fichier conf
-    APP_FILE="$HOME/Service-Overtchat/Conf/overtchat.conf"
-    if [[ -f "$APP_FILE" ]]; then
-        printf "%s\n" "Fichier $APP_FILE trouvé" >/dev/null
-    else
-        printf "%s\n" "Fichier $APP_FILE non trouvé. Erreur Fatal" >&2
-        return 1
-    fi
+    [[ $debug -lt 0 ]] && { 
+        echo "Une anomalie détectée. Veuillez refaire l'installation !" >&2; return 1
+    }
 
     # Variables attendues
     needed_vars=(over info web numeric folders files shell server prog)
@@ -454,8 +455,7 @@ info_prog() {
 
     if (( need_source == 1 )); then
         if ! source "$APP_FILE"; then
-            printf "%s\n" "Chargement fichier $APP_FILE impossible" >&2
-            return 1
+            printf "%s\n" "Chargement fichier $APP_FILE impossible" >&2; return 1
         fi
     fi
 
@@ -465,9 +465,8 @@ info_prog() {
     }
 
     # Version Git
-    ADD_DIR="/tmp/.Overtchat"
-    git -C "$APP_DIR" fetch --tags >/dev/null 2>&1
-    REMOTE=$(git -C "$APP_DIR" describe --tags --abbrev=0 2>/dev/null)
+    git -C "$INSTALL_TMP" fetch --tags >/dev/null 2>&1
+    REMOTE=$(git -C "$INSTALL_TMP" describe --tags --abbrev=0 2>/dev/null)
     [[ -n "$REMOTE" ]] && 
     printf "%s\n" "Version du programme Git : $REMOTE" \
     printf "%s\n" "Mise à jour disponible : $([[ ${numeric[version]} != $REMOTE ]] && echo Oui || echo Non)"
@@ -480,15 +479,16 @@ info_prog() {
         printf "%s\n" "Mise à jour Automatique : $([[ ${numeric[autoupdate]} -eq 1 ]] && echo Activé || echo Désactivé)"
 }
 
+                                ────────────────────
+                                |  FIN DES OPTIONS |
+                                ────────────────────
+
 aff_panel() {
 cat <<'PANEL'
                         ──────────────────────────────
                         |  Service-Overtchat - Panel  |
                         ──────────────────────────────
 PANEL
-
-INSTALL_TMP="/tmp/.Overtchat"
-INSTALL_HOME="$HOME/Service-Overtchat"
 
 # ─────────────────────────────────────────────────────────────
 # 1) Aucune installation détectée
