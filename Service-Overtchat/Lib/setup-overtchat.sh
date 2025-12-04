@@ -479,9 +479,9 @@ info_prog() {
         printf "%s\n" "Mise à jour Automatique : $([[ ${numeric[autoupdate]} -eq 1 ]] && echo Activé || echo Désactivé)"
 }
 
-                                ────────────────────
-                                |  FIN DES OPTIONS |
-                                ────────────────────
+#                                ────────────────────
+#                                |  FIN DES OPTIONS |
+#                                ────────────────────
 
 aff_panel() {
 cat <<'PANEL'
