@@ -575,7 +575,7 @@ panels_loop() {
     local choice
     while true; do
     aff_panel
-        read -rp "Entrez votre choix (0-7) : " choice
+        read -rp "Entrez votre choix (0-9) : " choice
         case "$choice" in
         0)
             printf "%s\n" "Quitter le programme. À bientôt !"
@@ -608,6 +608,9 @@ panels_loop() {
             init_git
             clear
             aff_panel
+            ;;
+        9)
+            info_prog
             ;;
         *)
             printf "%s\n" "Choix invalide. Veuillez réessayer."
