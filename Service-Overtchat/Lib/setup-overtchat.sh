@@ -417,6 +417,11 @@ init_git() {
 # Option 9
 info_prog() {
     debug=0
+    clear
+    cat <<'LOCAL'
+        Panel d'information générale du programme
+LOCAL
+
     dirs=(
         "$INSTALL_TMP"
         "$INSTALL_HOME"
@@ -469,14 +474,14 @@ info_prog() {
     REMOTE=$(git -C "$INSTALL_TMP" describe --tags --abbrev=0 2>/dev/null)
     [[ -n "$REMOTE" ]] && 
     printf "%s\n" "Version du programme Git : $REMOTE" \
-    printf "%s\n" "Mise à jour disponible : $([[ ${numeric[version]} != $REMOTE ]] && echo Oui || echo Non)"
+    "Mise à jour disponible : $([[ ${numeric[version]} != $REMOTE ]] && echo Oui || echo Non)"
 
     # Options update/autoupdate
     [[ -v numeric[update] ]] &&
-        printf "%s\n" "Mise à jour : $([[ ${numeric[update]} -eq 1 ]] && echo Activé || echo Désactivé)"
+    printf "%s\n" "Mise à jour : $([[ ${numeric[update]} -eq 1 ]] && echo Activé || echo Désactivé)"
 
     [[ -v numeric[autoupdate] ]] &&
-        printf "%s\n" "Mise à jour Automatique : $([[ ${numeric[autoupdate]} -eq 1 ]] && echo Activé || echo Désactivé)"
+    printf "%s\n" "Mise à jour Automatique : $([[ ${numeric[autoupdate]} -eq 1 ]] && echo Activé || echo Désactivé)"
 }
 
 #                                ────────────────────
