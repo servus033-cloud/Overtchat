@@ -295,9 +295,11 @@ setup_serv() {
                 break
             ;;
             server)
+                info "En travaux" 
                 break
             ;;
             all)
+                info "En travaux"
                 break
             ;;
             *)
@@ -310,7 +312,7 @@ setup_serv() {
 # -----------------------------
 # Update / upgrade
 # -----------------------------
-setup_update() {
+update() {
     validauto=0
     if [[ ! -f "$INSTALL_CONFIG" && ! -d "$INSTALL_HOME" ]]; then 
         err "Programme non installé ou éronné" >&2; return 1
@@ -422,9 +424,9 @@ main() {
                 err "Programme non installé"; return 1
             fi
             if [[ "${2-}" == "" ]]; then
-                setup_update
+                update
             else
-                setup_update "$2"
+                update "$2"
             fi
         ;;
         --delete)
