@@ -10,6 +10,8 @@
     set -euo pipefail
 } 
 
+echo "Initialisation en cours..."
+
 IFS=$'\n\t'
 
 # -----------------------------
@@ -44,6 +46,15 @@ MAKEFILE="$INSTALL_TMP/Install/MAKEFILE"
 MAKEVAR="release"
 
 API_KEY="44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b"
+
+# -----------------------------
+# État interne (runtime)
+# -----------------------------
+STATE_SERVICE=0
+STATE_SERVEUR=0
+STATE_GIT=0
+STATE_CONFIG=0
+
 
 # -----------------------------
 # Helpers
@@ -168,9 +179,10 @@ ${YELLOW}Commandes disponibles :${NC}
     ─ ${RED}delete${NC}    ( supprimer Service-Overtchat / Serveur-Overtchat )
     ─ ${YELLOW}init${NC}      ( ré-initialiser le dépôt Git en cas d'anomalie )
     ─ ${BLUE}help${NC}      ( afficher l'aide )
+    - ${GREEN}statut${NC}   ( permet de voir le statut du programme )
 
 ${YELLOW}Syntaxe de commande :${NC}
-    ${GREEN}${0}${NC} < --install 'server / service / all' | --update '-y' | --delete 'server / service / all' | --config | --init | --help >
+    ${GREEN}${0}${NC} < --install 'server / service / all' | --update '-y' | --delete 'server / service / all' | --config | --init | --help | --statut >
 
 EOF
 }
@@ -188,8 +200,10 @@ ${PINK}Update${NC} : met à jour le programme depuis le dépôt Git.
 ${RED}Delete${NC} : désinstalle le programme (et selon option, le serveur aussi).
 ${MAUVE}Config${NC} : crée un fichier de configuration interactif.
 ${YELLOW}Init${NC} : réinitialise le dépôt Git local si nécessaire.
+${BLUE}help${NC} : afficher l'aide générale.
+${GREEN}Statut${NC} : Permet de controler le programme.
 
-${info} : ${0} --install 'server / service / all' | --update '-y' | --delete 'server / service / all' | --config | --init
+${info} : ${0} --install 'server / service / all' | --update '-y' | --delete 'server / service / all' | --config | --init | --help | --statut
 
 HELP
 }
@@ -226,6 +240,48 @@ mess_install() {
 GLOB
 }
 
+install_server() {
+    # Pré-checks
+    if [[ -d "$SERVER_HOME" ]]; then
+        err "Serveur-Overtchat déjà installé"
+        return 1
+    fi
+
+    if [[ ! -d "$INSTALL_TMP/Serveur-Overtchat" ]]; then
+        err "Sources Serveur-Overtchat introuvables"
+        return 1
+    fi
+
+    infof "Installation du Serveur-Overtchat..."
+
+    # Création du dossier serveur
+    mkdir -p "$SERVER_HOME" || {
+        err "Impossible de créer $SERVER_HOME"
+        return 1
+    }
+
+    # Déploiement
+    if ! cp -a "$INSTALL_TMP/Serveur-Overtchat/." "$SERVER_HOME/"; then
+        err "Erreur lors du déploiement du serveur"
+        rm -rf "$SERVER_HOME"
+        return 1
+    fi
+
+    # Permissions scripts serveur
+    if [[ -d "$SERVER_HOME/bin" ]]; then
+        find "$SERVER_HOME/bin" -type f -name "*.sh" -exec chmod +x {} \;
+    fi
+
+    ok "Serveur-Overtchat installé avec succès"
+    return 0
+}
+
+install_service() {
+    case service in
+        service) : ;;
+    esac
+}
+
 # -----------------------------
 # Installation serveur / service
 # -----------------------------
@@ -233,73 +289,156 @@ setup_serv() {
     while true; do
         case "$2" in
             service)
-                # Contrôle si installation déjà faite
+                # ─────────────────────────────
+                # Pré-checks
+                # ─────────────────────────────
                 if [[ -d "$INSTALL_HOME" ]]; then
-                    err "Service déjà installé"; return 1
+                    err "Service déjà installé"
+                    return 1
+                fi
+
+                if [[ -z "$REPO_URL" || -z "$INSTALL_BRANCH" ]]; then
+                    err "Configuration Git invalide"
+                    return 1
                 fi
 
                 mess_install
                 prompt_continue
-                infof "Installation [ en cours... ]"
+                infof "Installation du service en cours..."
 
+                # ─────────────────────────────
+                # Clonage Git
+                # ─────────────────────────────
+                if [[ -e "$INSTALL_TMP" ]]; then
+                    err "Répertoire temporaire déjà présent : $INSTALL_TMP"
+                    err "Nettoyez-le avant de relancer l'installation"
+                    return 1
+                fi
+
+                infof "Clonage du dépôt ($INSTALL_BRANCH)..."
+                if ! git clone -b "$INSTALL_BRANCH" "$REPO_URL" "$INSTALL_TMP"; then
+                    err "Erreur lors du clonage du dépôt Git"
+                    rm -rf "$INSTALL_TMP"
+                    return 1
+                fi
+
+                # ─────────────────────────────
+                # Permissions des scripts
+                # ─────────────────────────────
+                infof "Vérification des scripts exécutables..."
+
+                make_executable() {
+                    local dir="$1"
+
+                    if [[ ! -d "$dir" ]]; then
+                        err "Répertoire manquant : $dir"
+                        return 1
+                    fi
+
+                    local files
+                    files=$(find "$dir" -type f -name "*.sh" 2>/dev/null)
+
+                    if [[ -z "$files" ]]; then
+                        err "Aucun script .sh trouvé dans $dir"
+                        return 1
+                    fi
+
+                    chmod +x $files
+                    return 0
+                }
+
+                make_executable "$INSTALL_TMP/Install/bin" || return 1
+                make_executable "$INSTALL_TMP/Service-Overtchat/Lib" || return 1
+
+                # ─────────────────────────────
+                # Compilation
+                # ─────────────────────────────
+                if [[ ! -f "$MAKEFILE" ]]; then
+                    err "MAKEFILE introuvable : $MAKEFILE"
+                    rm -rf "$INSTALL_TMP"
+                    return 1
+                fi
+
+                infof "Compilation en cours..."
+                if ! make -f "$MAKEFILE" "$MAKEVAR"; then
+                    err "Erreur lors de la compilation"
+                    rm -rf "$INSTALL_TMP"
+                    return 1
+                fi
+                ok "Compilation réussie"
+
+                # ─────────────────────────────
+                # Déploiement
+                # ─────────────────────────────
+                ARCHIVE="$HOME/Service-Overtchat.tar.gz"
+
+                if [[ ! -f "$ARCHIVE" ]]; then
+                    err "Archive générée introuvable : $ARCHIVE"
+                    rm -rf "$INSTALL_TMP"
+                    return 1
+                fi
+
+                infof "Déploiement de l'archive..."
+                if ! tar -xzf "$ARCHIVE" -C "$HOME/"; then
+                    err "Erreur lors de l'extraction de l'archive"
+                    rm -rf "$ARCHIVE" "$INSTALL_TMP"
+                    return 1
+                fi
+
+                rm -f "$ARCHIVE"
+
+                ok "Déploiement terminé avec succès"
+
+                # ─────────────────────────────
+                # Post-install
+                # ─────────────────────────────
+                ok "Installation du service terminée avec succès"
+                sleep 2
+                clear
+
+                if [[ -x "$INSTALL_BIN/setup-overtchat" ]]; then
+                    exec "$INSTALL_BIN/setup-overtchat"
+                else
+                    warn "setup-overtchat introuvable ou non exécutable"
+                fi
+            ;;
+            server)
+                mess_install
+                prompt_continue
+
+                # Clonage requis si pas déjà présent
                 if [[ ! -d "$INSTALL_TMP/.git" ]]; then
                     infof "Clonage du dépôt..."
                     if ! git clone -b "$INSTALL_BRANCH" "$REPO_URL" "$INSTALL_TMP"; then
-                        err "Erreur lors du clonage"; return 1
+                        err "Erreur lors du clonage du dépôt"
+                        return 1
                     fi
-                else
-                    err "Une Dépôt Git est déjà présent. Arrêt de l'installation !"
-                    exit 1
                 fi
 
-                # Rendre les scripts exécutables
-                for dir in "$INSTALL_TMP/Install/bin" "$INSTALL_TMP/Service-Overtchat/Lib"; do
-                    if [[ -d "$dir" ]]; then
-                        search=$(find "$dir" -type f -name "*.sh" -print -quit 2>/dev/null || true)
-                        if [[ -n "$search" ]]; then
-                            find "$dir" -type f -name "*.sh" -exec chmod +x {} \;
-                        else
-                            err "Aucun script .sh trouvé dans $dir. Installation impossible."; return 1
-                        fi
-                    fi
-                done
+                install_server || return 1
 
-                if [[ -f "$MAKEFILE" ]]; then
-                    infof "Lancement de la compilation..."
-                    if ! make -f "$MAKEFILE" "$MAKEVAR"; then
-                        err "Erreur lors de la compilation"; return 1
-                    fi
-                    ok "Compilation terminée avec succès."
-                else
-                    err "Fichier MAKEFILE introuvable. Impossible de compiler."; return 1
-                fi
-
-                if [[ -f "$HOME/Service-Overtchat.tar.gz" ]]; then
-                    infof "Déploiement de l'archive..."
-                    if ! tar -xzf "$HOME/Service-Overtchat.tar.gz" -C "$HOME/"; then
-                        err "Erreur lors du déploiement"; return 1
-                    fi
-                else
-                    err "Archive introuvable après compilation. Installation annulée."; return 1
-                fi
-
-                ok "Déploiement terminé avec succès."
-                rm -f "$HOME/Service-Overtchat.tar.gz" || true
-
-                ok "Installation terminée avec succès."
-                sleep 2
-                clear
-                if [[ -x "$INSTALL_BIN/setup-overtchat" ]]; then
-                    exec "$INSTALL_BIN/setup-overtchat"
-                fi
-                break
-            ;;
-            server)
-                info "En travaux" 
+                ok "Installation Serveur-Overtchat terminée"
                 break
             ;;
             all)
-                info "En travaux"
+                mess_install
+                prompt_continue
+
+                infof "Installation complète : Service + Serveur"
+
+                # Installation Service
+                install_service || {
+                    err "Échec installation Service-Overtchat"
+                    return 1
+                }
+
+                # Installation Serveur
+                install_server || {
+                    err "Échec installation Serveur-Overtchat"
+                    return 1
+                }
+
+                ok "Installation complète terminée avec succès"
                 break
             ;;
             *)
@@ -312,72 +451,111 @@ setup_serv() {
 # -----------------------------
 # Update / upgrade
 # -----------------------------
-update() {
-    validauto=0
-    if [[ ! -f "$INSTALL_CONFIG" && ! -d "$INSTALL_HOME" ]]; then 
-        err "Programme non installé ou éronné" >&2; return 1
-    fi
+do_update() {
+    local auto="$1"
+    local dryrun="$2"   # 1 = dry-run
 
-    if [[ ! -d "$INSTALL_TMP/.git" ]]; then
-        err "Répertoire Git introuvable dans $INSTALL_TMP. Annulation mise à jour"; return 1
-    fi
-    # Syntaxe pour auto accept
-    if [[ "$2" == "-y" ]]; then
-        validauto=1        
-    fi
-
-    cd "$INSTALL_TMP" || { err "Erreur chargement $INSTALL_TMP"; return 1; }
-
-    git fetch origin "$INSTALL_BRANCH" >/dev/null 2>&1 || true
-    LOCAL=$(git rev-parse HEAD)
-    REMOTE=$(git rev-parse origin/$INSTALL_BRANCH)
-
-    if [[ "$LOCAL" != "$REMOTE" ]]; then
-        infof "Nouvelle version détectée !"
-        if [[ $validauto -eq 1 ]]; then
-            upgrade
-        else
-            if prompt_yn "$quest Voulez-vous mettre à jour maintenant ? (Y/N) : "; then
-                upgrade
-            else
-                ok "Mise à jour annulée par l'utilisateur."
-            fi
-        fi
-    else
-        infof "Déjà à jour."
-        sleep 1
-    fi
-}
-
-upgrade() {
     if ! load_config; then
+        err "Configuration invalide. Mise à jour annulée."
         return 1
     fi
 
-    cd "$INSTALL_TMP" || { err "Erreur chargement $INSTALL_TMP"; return 1; }
-
-    git pull origin "$INSTALL_BRANCH" || { err "Erreur lors de la mise à jour depuis Git."; return 1; }
-
-    git fetch --tags origin || true
-    latest_version=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)
-
-    if [[ -z "$latest_version" ]]; then
-        err "Aucun tag trouvé sur le dépôt. Impossible de déterminer la dernière version."; return 1
+    if [[ ! -d "$INSTALL_TMP/.git" ]]; then
+        err "Dépôt Git introuvable dans $INSTALL_TMP"
+        return 1
     fi
 
-    infof "Dernière version disponible : $latest_version"
+    cd "$INSTALL_TMP" || {
+        err "Impossible d'accéder à $INSTALL_TMP"
+        return 1
+    }
 
-    conf_file="$INSTALL_HOME/Conf/overtchat.conf"
-    build_date=$(date '+%Y-%m-%d %H:%M:%S')
-    check_date=$(date '+%Y-%m-%d %H:%M:%S')
-
-    if [[ -f "$conf_file" ]]; then
-        sed -i "s|numeric\[\"version\"\]="\"[^\"]*\""|numeric[\"version\"]=\"$latest_version\"|" "$conf_file" || true
-        sed -i "s|numeric\[\"build\"\]="\"[^\"]*\""|numeric[\"build\"]=\"$build_date\"|" "$conf_file" || true
-        sed -i "s|numeric\[\"check\"\]="\"[^\"]*\""|numeric[\"check\"]=\"$check_date\"|" "$conf_file" || true
+    # Dépôt propre obligatoire
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        err "Le dépôt contient des modifications locales"
+        return 1
     fi
 
-    ok "Mise à jour terminée vers la version $latest_version."
+    infof "Vérification des mises à jour..."
+
+    # Version installée (locale)
+    installed_version=$(get_git_version 2>/dev/null || echo "unknown")
+
+    # Version distante (dernière officielle)
+    git fetch origin "$INSTALL_BRANCH" --tags >/dev/null 2>&1
+
+    latest_tag=$(git describe --tags --abbrev=0 2>/dev/null)
+    if [[ -z "$latest_tag" ]]; then
+        err "Aucun tag disponible sur le dépôt"
+        return 1
+    fi
+    latest_version="${latest_tag#v}"
+
+    infof "Version installée : $installed_version"
+    infof "Dernière version   : $latest_version"
+
+    if [[ "$installed_version" == "$latest_version" ]]; then
+        ok "Déjà à jour"
+        return 0
+    fi
+
+    if [[ "$dryrun" -eq 1 ]]; then
+        infof "[DRY-RUN] Mise à jour requise"
+        infof "[DRY-RUN] Version installée : $installed_version"
+        infof "[DRY-RUN] Version disponible : $latest_version"
+        return 0
+    fi
+
+    write_version_json
+
+    # Confirmation utilisateur si non-auto
+    if [[ "$auto" -ne 1 ]]; then
+        if ! prompt_yn "$quest Voulez-vous mettre à jour maintenant ? (Y/N) : "; then
+            ok "Mise à jour annulée par l'utilisateur."
+            return 0
+        fi
+    fi
+
+    # Sauvegarde config
+    backup_conf="$INSTALL_HOME/Conf/overtchat.conf.bak.$(date +%s)"
+    cp -a "$INSTALL_HOME/Conf/overtchat.conf" "$backup_conf"
+
+    infof "Application de la mise à jour..."
+
+    if ! git reset --hard "origin/$INSTALL_BRANCH"; then
+        err "Échec de la mise à jour. Restauration."
+        git reset --hard HEAD@{1} || true
+        return 1
+    fi
+
+    now=$(date '+%Y-%m-%d %H:%M:%S')
+
+    sed -i \
+        -e "s|^numeric\[\"version\"\]=.*|numeric[\"version\"]=\"$latest_version\"|" \
+        -e "s|^numeric\[\"build\"\]=.*|numeric[\"build\"]=\"$now\"|" \
+        -e "s|^numeric\[\"check\"\]=.*|numeric[\"check\"]=\"$now\"|" \
+        "$INSTALL_HOME/Conf/overtchat.conf"
+
+    ok "Mise à jour terminée vers la version $latest_version"
+    infof "Sauvegarde configuration : $backup_conf"
+
+    return 0
+}
+
+update() {
+    local auto=0
+    local dryrun=0
+
+    if [[ ! -f "$INSTALL_CONFIG" && ! -d "$INSTALL_HOME" ]]; then 
+        err "Programme non installé ou erroné"
+        return 1
+    fi
+
+    [[ "${2-}" == "-y" ]] && auto=1
+    [[ "${2-}" == "--dry-run" ]] && dryrun=1
+    [[ "${3-}" == "--dry-run" ]] && dryrun=1
+
+    do_update "$auto" "$dryrun"
 }
 
 # -----------------------------
@@ -390,6 +568,70 @@ setup_build() {
         fi
     fi
     setup_serv
+}
+
+check_only() {
+    collect_status
+    load_expected_state
+
+    if [[ "$EXPECT_SERVICE" -ne "$STATE_SERVICE" ]]; then
+        return 1
+    fi
+    if [[ "$EXPECT_SERVEUR" -ne "$STATE_SERVEUR" ]]; then
+        return 1
+    fi
+    if [[ "$EXPECT_GIT" -ne "$STATE_GIT" ]]; then
+        return 1
+    fi
+
+    return 0
+}
+
+repair_service() {
+    infof "Réparation : installation du service"
+    setup_serv service
+}
+
+repair_git() {
+    infof "Réparation : initialisation du dépôt Git"
+    rm -rf "$INSTALL_TMP"
+    git clone -b "$INSTALL_BRANCH" "$REPO_URL" "$INSTALL_TMP"
+}
+
+repair_from_state() {
+    collect_status
+    load_expected_state
+
+    # Service attendu mais absent
+    if [[ "$EXPECT_SERVICE" -eq 1 && "$STATE_SERVICE" -eq 0 ]]; then
+        repair_service
+    fi
+
+    # Git attendu mais absent
+    if [[ "$EXPECT_GIT" -eq 1 && "$STATE_GIT" -eq 0 ]]; then
+        repair_git
+    fi
+
+    # Serveur (placeholder)
+    if [[ "$EXPECT_SERVEUR" -eq 1 && "$STATE_SERVEUR" -eq 0 ]]; then
+        err "Réparation serveur non implémentée"
+    fi
+
+    ok "Réparation terminée"
+}
+
+# -------------------
+#       GIT 
+# -------------------
+get_git_version() {
+    cd "$INSTALL_TMP" || return 1
+
+    git fetch --tags origin >/dev/null 2>&1 || true
+
+    local tag
+    tag=$(git describe --tags --abbrev=0 2>/dev/null) || return 1
+
+    echo "${tag#v}"
 }
 
 # -----------------------------
@@ -428,6 +670,13 @@ main() {
             else
                 update "$2"
             fi
+        ;;
+        --repair)
+            if [[ $EUID -ne 0 ]]; then
+                err "Réparation nécessite les droits administrateur"
+                exit 1
+            fi
+            repair_from_state
         ;;
         --delete)
             if [[ ! -f "$INSTALL_CONFIG" || ! -d "$INSTALL_HOME" ]]; then
@@ -642,14 +891,148 @@ EOF
         ;;
         --help)
             clear; affich_help; ;;
+        --statut)
+            collect_status
+            load_expected_state
+
+            if [[ "${2-}" == "--json" ]]; then
+                render_status_json
+            else
+                render_status_human
+            fi
+        ;;
+        --check)
+            check_only && exit 0 || exit 1
+        ;;
         *)
             infof "Commande inconnue. Pour plus d'information: $0 --help"; return 1 ;;
     esac
 }
 
 # -----------------------------
-# Entrée
+#           Entrée
 # -----------------------------
+
+collect_status() {
+    STATE_SERVICE=0
+    STATE_SERVEUR=0
+    STATE_GIT=0
+    STATE_CONFIG=0
+
+    [[ -d "$INSTALL_HOME" ]] && STATE_SERVICE=1
+    [[ -d "$INSTALL_SERVER" ]] && STATE_SERVEUR=1
+    [[ -d "$INSTALL_TMP/.git" ]] && STATE_GIT=1
+    [[ -f "$INSTALL_CONFIG" ]] && STATE_CONFIG=1
+}
+
+compute_global_status() {
+    if [[ $STATE_SERVICE -eq 1 && $STATE_CONFIG -eq 1 ]]; then
+        echo "ok"
+    elif [[ $STATE_SERVICE -eq 0 && $STATE_SERVEUR -eq 0 && $STATE_GIT -eq 0 ]]; then
+        echo "absent"
+    else
+        echo "partial"
+    fi
+}
+
+compute_component_ok() {
+    local expected="$1"
+    local actual="$2"
+
+    if [[ "$expected" -eq "$actual" ]]; then
+        echo true
+    else
+        echo false
+    fi
+}
+
+render_status_human() {
+    [[ $STATE_SERVICE -eq 1 ]] && ok "Programme Service-Overtchat installé" || err "Programme Service-Overtchat non installé"
+    [[ $STATE_SERVEUR -eq 1 ]] && ok "Programme Serveur-Overtchat installé" || err "Programme Serveur-Overtchat non installé"
+    [[ $STATE_GIT -eq 1 ]] && ok "Dépôt Git initialisé" || err "Dépôt Git non initialisé"
+    [[ $STATE_CONFIG -eq 1 ]] && ok "Configuration chargée" || err "Aucune configuration effectuée"
+}
+
+read_conf_value() {
+    local key="$1"
+    local file="$INSTALL_CONFIG"
+
+    [[ ! -f "$file" ]] && echo "null" && return
+
+    sed -n "s/^${key}=//p" "$file" | head -n1
+}
+
+load_expected_state() {
+    EXPECT_SERVICE=$(read_conf_value "service")
+    EXPECT_SERVEUR=$(read_conf_value "serveur")
+    EXPECT_GIT=$(read_conf_value "git")
+
+    [[ "$EXPECT_SERVICE" != "1" ]] && EXPECT_SERVICE=0
+    [[ "$EXPECT_SERVEUR" != "1" ]] && EXPECT_SERVEUR=0
+    [[ "$EXPECT_GIT" != "1" ]] && EXPECT_GIT=0
+}
+
+# -----------------------------
+#           JSON
+# -----------------------------
+
+write_version_json() {
+    local file="$INSTALL_TMP/state.json"
+
+    cat > "$file" <<EOF
+{
+  "version": {
+    "installed": "$installed_version",
+    "latest": "$latest_version",
+    "update_available": $([[ "$installed_version" != "$latest_version" ]] && echo true || echo false)
+  }
+}
+EOF
+}
+
+render_status_json() {
+    local ts
+    ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+cat <<EOF
+{
+    "schema": "overtchat-status-v2",
+    "generated_at": "$ts",
+
+    "paths": {
+        "install_home": "$INSTALL_HOME",
+        "install_server": "$INSTALL_SERVER",
+        "install_tmp": "$INSTALL_TMP"
+    },
+
+    "components": {
+        "service": {
+            "enabled": $( [[ $EXPECT_SERVICE -eq 1 ]] && echo true || echo false ),
+            "installed": $( [[ $STATE_SERVICE -eq 1 ]] && echo true || echo false ),
+            "ok": $(compute_component_ok "$EXPECT_SERVICE" "$STATE_SERVICE")
+        },
+        "serveur": {
+            "enabled": $( [[ $EXPECT_SERVEUR -eq 1 ]] && echo true || echo false ),
+            "installed": $( [[ $STATE_SERVEUR -eq 1 ]] && echo true || echo false ),
+            "ok": $(compute_component_ok "$EXPECT_SERVEUR" "$STATE_SERVEUR")
+        },
+        "git": {
+            "enabled": $( [[ $EXPECT_GIT -eq 1 ]] && echo true || echo false ),
+            "ready": $( [[ $STATE_GIT -eq 1 ]] && echo true || echo false ),
+            "ok": $(compute_component_ok "$EXPECT_GIT" "$STATE_GIT")
+        }
+    },
+
+    "config": {
+        "present": true,
+        "path": "$INSTALL_CONFIG"
+    },
+
+    "global_status": "$(compute_global_status)"
+}
+EOF
+}
+
 main "$@"
 
 exit 0
