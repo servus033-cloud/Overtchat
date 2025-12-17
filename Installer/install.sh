@@ -9,64 +9,94 @@ echo "Initialisation en cours..."
 IFS=$'\n\t'
 
 # -----------------------------
-# Couleurs (fiables)
-# -----------------------------
-RED=$'\033[0;31m'         # Rouge
-BLUE=$'\033[0;34m'        # Bleue
-YELLOW=$'\033[1;33m'      # Jaune
-GREEN=$'\033[0;32m'       # Vert
-PINK=$'\033[0;35m'        # Rose / Mauve
-PINK_BRIGHT=$'\033[1;35m' # Rose vif
-MAUVE=$'\033[38;2;216;157;255m' # Mauve 24-bit (si support)
-NC=$'\033[0m'              # Reset color
-
-accept="${GREEN}Accept :${NC}"
-refus="${RED}Refuser :${NC}"
-info="${BLUE}Informations :${NC}"
-quest="${YELLOW}Question :${NC}"
-
-# -----------------------------
-# Variables d'environnement
+# Variables d'environnement ( Json)
 # -----------------------------
 
 # Variables principales pour Json
-cat > /tmp/overtchat_install_var.json <<'EOF'
-{
-    "service": 0,
-    "serveur": 0,
-    "git": 0,
-    "INSTALL_TMP": "/tmp/.Overtchat",
-    "INSTALL_BRANCH": "main",
-    "INSTALL_CONFIG": "$HOME/.config~overtchat",
-    "INSTALL_DEFAUT": "$HOME",
-    "INSTALL_HOME": "$INSTALL_DEFAUT/Service-Overtchat",
-    "INSTALL_SERVER": "$INSTALL_DEFAUT/Serveur-Overtchat",
-    "INSTALL_BIN": "$INSTALL_HOME/bin/Lib",
-    "REPO_URL": "https://github.com/servus033-cloud/Overtchat.git",
-    "MAKEFILE": "$INSTALL_TMP/Install/MAKEFILE",
-    "MAKEVAR": "release",
-    "key_api": "44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b"
+CONFIG_PATHS="./config/overtchat.json"
+
+# Fichier de configuration legacy (Bash)
+[[ ! -f "$CONFIG_PATHS" ]] && {
+    err "Fichier de chemins introuvable : $CONFIG_PATHS"
+    exit 1
 }
-EOF
 
-# Export des variables
-if [[ -f /tmp/overtchat_install_var.json ]]; then
-    while IFS== read -r key value; do
-        eval "export $key=\"$value\""
-    done < <(
-        jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/overtchat_install_var.json
-    )
+# Gestion paths Json
+load_paths() {
+    INSTALL_HOME=$(jq -r '.paths.install.service' "$CONFIG_PATHS")
+    INSTALL_SERVER=$(jq -r '.paths.install.server' "$CONFIG_PATHS")
+    INSTALL_TMP=$(jq -r '.paths.install.tmp' "$CONFIG_PATHS")
+    INSTALL_CONFIG=$(jq -r '.paths.config' "$CONFIG_PATHS")
 
-    rm -f /tmp/overtchat_install_var.json
-fi
+    INSTALL_BIN=$(jq -r '.paths.bin.service_lib' "$CONFIG_PATHS")
+
+    REPO_URL=$(jq -r '.git.repo' "$CONFIG_PATHS")
+    INSTALL_BRANCH=$(jq -r '.git.branch' "$CONFIG_PATHS")
+
+    MAKEFILE=$(jq -r '.build.makefile' "$CONFIG_PATHS")
+    MAKEVAR=$(jq -r '.build.target' "$CONFIG_PATHS")
+
+    API_KEY=$(jq -r '.security.api_key' "$CONFIG_PATHS")
+}
+
+load_paths
+
+for p in INSTALL_HOME INSTALL_SERVER INSTALL_TMP INSTALL_BIN; do
+    [[ -z "${!p}" || "${!p}" == "null" ]] && {
+        err "Variable $p invalide (JSON)"
+        exit 1
+    }
+done
+
+# Gestion commands Json
+load_commands_need() {
+    $(jq -r '.commands.command' "$CONFIG_PATHS") || {
+        err "Fichier de commandes introuvable : $CONFIG_PATHS"
+        exit 1
+    }
+
+    REQ_BASH=$(jq -r '.requirements.bash[]' "$CONFIG_PATHS")
+}
+
+load_commands_need
+
+for cmd in $REQ_BASH; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        err "La commande requise '$cmd' n'est pas installée. Veuillez l'installer avant de continuer."
+        exit 1
+    fi
+done
+
+# Gestion colors Json
+load_colors() {
+    NC=$(jq -r '.colors.reset' "$CONFIG_PATHS")
+    BLUE=$(jq -r '.colors.blue' "$CONFIG_PATHS")
+    RED=$(jq -r '.colors.red' "$CONFIG_PATHS")
+    YELLOW=$(jq -r '.colors.yellow' "$CONFIG_PATHS")
+    GREEN=$(jq -r '.colors.green' "$CONFIG_PATHS")
+    MAJENTA=$(jq -r '.colors.majenta' "$CONFIG_PATHS")
+    CYAN=$(jq -r '.colors.cyan' "$CONFIG_PATHS")
+    WHITE=$(jq -r '.colors.white' "$CONFIG_PATHS")
+}
 
 # -----------------------------
 # État interne (runtime)
 # -----------------------------
-STATE_SERVICE=0
-STATE_SERVEUR=0
-STATE_GIT=0
-STATE_CONFIG=0
+if [[ $(jq -r '.setup-base.name' "$CONFIG_PATHS") == "Service-Overtchat" ]]; then
+    STATE_SERVICE=$(jq -r '.setup-base.install' "$CONFIG_PATHS")
+fi
+
+if [[ $(jq -r '.setup-base.name' "$CONFIG_PATHS") == "Serveur-Overtchat" ]]; then
+    STATE_SERVEUR=$(jq -r '.setup-base.install' "$CONFIG_PATHS")
+fi
+
+if [[ $(jq -r '.setup-base.name' "$CONFIG_PATHS") == "Github" ]]; then
+    STATE_GIT=$(jq -r '.setup-base.load' "$CONFIG_PATHS")
+fi
+
+if [[ $(jq -r '.setup-base.name' "$CONFIG_PATHS") == "overtchat.json" ]]; then
+    STATE_CONFIG=$(jq -r '.setup-base.load' "$CONFIG_PATHS")
+fi
 
 # -----------------------------
 # Helpers
@@ -93,37 +123,6 @@ prompt_continue() {
         echo "Abandon."; exit 0
     fi
 }
-
-
-if ! command -v jq &>/dev/null; then
-    err "[ jq ] Package non installé. Souhaité vous l'installé ? ( access root obligatoire ! )" >&2
-    prompt_continue
-    if ! sudo apt-get update; then
-        err "Impossible de charger Update !"
-        exit 1
-    fi
-
-    if ! sudo apt install jq; then
-        err "Impossible d'installer le package"
-        exit 1
-    fi    
-fi
-
-if ! command -v msmtp &>/dev/null; then
-    err "[ msmtp ] Package non installé. Souhaité vous l'installé ? ( access root obligatoire ! )" >&2
-    prompt_continue
-    if ! sudo apt-get update; then
-        err "Impossible de charger Update !"
-        exit 1
-    fi
-
-    if ! sudo apt install msmtp; then
-        err "Impossible d'installer le package"
-        exit 1
-    fi    
-fi
-
-command_exists() { command -v "$1" >/dev/null 2>&1; }
 
 prompt_yn() {
     # usage: prompt_yn "Message ? (Y/N)"
@@ -155,203 +154,12 @@ validate_email() {
     local domain
     domain="${email##*@}"
 
-    if command_exists dig; then
-        if ! dig +short MX "$domain" | grep -q . && ! dig +short A "$domain" | grep -q .; then
-            err "Le domaine '$domain' semble ne pas exister ou n'a pas d'enregistrements DNS valides."
-            return 1
-        fi
-    else
-        infof "Impossible de vérifier le domaine (dig non installé). Vérification DNS sautée.";
+    if ! dig +short MX "$domain" | grep -q . && ! dig +short A "$domain" | grep -q .; then
+        err "Le domaine '$domain' semble ne pas exister ou n'a pas d'enregistrements DNS valides."
+        return 1
     fi
 
     return 0
-}
-
-# -----------------------------
-# Affichage principal
-# -----------------------------
-show_panel() {
-    local mode="${1:-}"
-
-    cat <<EOF
-${BLUE}────────────────────────────────────────────${NC}
-${BLUE}   Panel Information — Service-Overtchat    ${NC}
-${BLUE}────────────────────────────────────────────${NC}
-
-EOF
-
-    if [[ "$mode" == "help" ]]; then
-        show_help
-    else
-        show_commands
-    fi
-}
-
-# -----------------------------
-# Commandes disponibles (court)
-# -----------------------------
-show_commands() {
-    cat <<EOF
-${YELLOW}Commandes disponibles :${NC}
-
-  ${GREEN}install${NC}    Installer Service-Overtchat / Serveur
-  ${MAUVE}config${NC}     Générer le fichier de configuration
-  ${PINK}update${NC}     Vérifier / appliquer les mises à jour
-  ${RED}delete${NC}     Désinstaller Service / Serveur
-  ${YELLOW}init${NC}       Réinitialiser le dépôt Git
-  ${GREEN}statut${NC}     Afficher l'état du programme
-  ${BLUE}help${NC}       Afficher l'aide détaillée
-
-${YELLOW}Syntaxe :${NC}
-  ${GREEN}${0}${NC} <commande> [options]
-
-Tapez ${BLUE}--help${NC} pour plus de détails.
-EOF
-}
-
-# -----------------------------
-# Aide détaillée
-# -----------------------------
-show_help() {
-    cat <<EOF
-${YELLOW}Aide détaillée — Commandes :${NC}
-
-${GREEN}--install <service | server | all>${NC}
-  Installe Service-Overtchat, le Serveur ou les deux.
-
-${MAUVE}--config${NC}
-  Lance la configuration interactive et génère les fichiers nécessaires.
-
-${PINK}--update [-y | --dry-run]${NC}
-  Vérifie et applique les mises à jour depuis le dépôt Git.
-  -y         : mise à jour automatique sans confirmation
-  --dry-run  : simulation sans modification
-
-${RED}--delete <service | server | all>${NC}
-  Désinstalle le ou les composants sélectionnés.
-
-${YELLOW}--init${NC}
-  Réinitialise le dépôt Git local en cas de problème.
-
-${GREEN}--statut [--json]${NC}
-  Affiche l'état du programme et des composants.
-
-${BLUE}--help${NC}
-  Affiche cette aide détaillée.
-
-${YELLOW}Exemples :${NC}
-  ${GREEN}${0}${NC} --config
-  ${GREEN}${0}${NC} --install service
-  ${GREEN}${0}${NC} --update -y
-  ${GREEN}${0}${NC} --delete all
-EOF
-}
-
-show_help_install() {
-cat <<EOF
-${GREEN}--install <service | server | all>${NC}
-
-Installe les composants du programme.
-
-  service   Installe Service-Overtchat
-  server    Installe Serveur-Overtchat
-  all       Installe Service + Serveur
-
-Exemples :
-  ${0} --install service
-  ${0} --install all
-EOF
-}
-
-show_help_update() {
-cat <<EOF
-${PINK}--update [-y | --dry-run]${NC}
-
-Met à jour le programme depuis le dépôt Git.
-
-Options :
-  -y           Mise à jour automatique (sans confirmation)
-  --dry-run    Simulation de la mise à jour
-
-Exemples :
-  ${0} --update
-  ${0} --update -y
-  ${0} --update --dry-run
-EOF
-}
-
-show_help_delete() {
-cat <<EOF
-${RED}--delete <service | server | all>${NC}
-
-Désinstalle les composants du programme.
-
-  service   Supprime uniquement Service-Overtchat
-  server    Supprime uniquement Serveur-Overtchat
-  all       Supprime Service + Serveur + dépôt Git
-
-Exemples :
-  ${0} --delete service
-  ${0} --delete all
-EOF
-}
-
-show_help_config() {
-cat <<EOF
-${MAUVE}--config${NC}
-
-Lance la configuration interactive.
-Génère :
-  - config.json (source de vérité)
-  - overtchat.conf (compatibilité Bash)
-
-Exemple :
-  ${0} --config
-EOF
-}
-
-show_help_statut() {
-cat <<EOF
-${GREEN}--statut [--json]${NC}
-
-Affiche l'état du programme.
-
-Options :
-  --json   Sortie machine-lisible (JSON)
-
-Exemples :
-  ${0} --statut
-  ${0} --statut --json
-EOF
-}
-
-show_help_json() {
-cat <<'EOF'
-{
-  "commands": {
-    "install": {
-      "usage": "--install <service|server|all>",
-      "description": "Installe les composants"
-    },
-    "update": {
-      "usage": "--update [-y|--dry-run]",
-      "description": "Met à jour le programme"
-    },
-    "delete": {
-      "usage": "--delete <service|server|all>",
-      "description": "Désinstalle les composants"
-    },
-    "config": {
-      "usage": "--config",
-      "description": "Configuration interactive"
-    },
-    "statut": {
-      "usage": "--statut [--json]",
-      "description": "Affiche l'état du programme"
-    }
-  }
-}
-EOF
 }
 
 install_server() {
@@ -563,99 +371,7 @@ setup_serv() {
     done
 }
 
-# -----------------------------
-# Update / upgrade
-# -----------------------------
-do_update() {
-    local auto="$1"
-    local dryrun="$2"   # 1 = dry-run
 
-    if ! load_config; then
-        err "Configuration invalide. Mise à jour annulée."
-        return 1
-    fi
-
-    if [[ ! -d "$INSTALL_TMP/.git" ]]; then
-        err "Dépôt Git introuvable dans $INSTALL_TMP"
-        return 1
-    fi
-
-    cd "$INSTALL_TMP" || {
-        err "Impossible d'accéder à $INSTALL_TMP"
-        return 1
-    }
-
-    # Dépôt propre obligatoire
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        err "Le dépôt contient des modifications locales"
-        return 1
-    fi
-
-    infof "Vérification des mises à jour..."
-
-    # Version installée (locale)
-    installed_version=$(get_git_version 2>/dev/null || echo "unknown")
-
-    # Version distante (dernière officielle)
-    git fetch origin "$INSTALL_BRANCH" --tags >/dev/null 2>&1
-
-    latest_tag=$(git describe --tags --abbrev=0 2>/dev/null)
-    if [[ -z "$latest_tag" ]]; then
-        err "Aucun tag disponible sur le dépôt"
-        return 1
-    fi
-    latest_version="${latest_tag#v}"
-
-    infof "Version installée : $installed_version"
-    infof "Dernière version   : $latest_version"
-
-    if [[ "$installed_version" == "$latest_version" ]]; then
-        ok "Déjà à jour"
-        return 0
-    fi
-
-    if [[ "$dryrun" -eq 1 ]]; then
-        infof "[DRY-RUN] Mise à jour requise"
-        infof "[DRY-RUN] Version installée : $installed_version"
-        infof "[DRY-RUN] Version disponible : $latest_version"
-        return 0
-    fi
-
-    write_version_json
-
-    # Confirmation utilisateur si non-auto
-    if [[ "$auto" -ne 1 ]]; then
-        if ! prompt_yn "$quest Voulez-vous mettre à jour maintenant ? (Y/N) : "; then
-            ok "Mise à jour annulée par l'utilisateur."
-            return 0
-        fi
-    fi
-
-    # Sauvegarde config
-    backup_conf="$INSTALL_HOME/Conf/overtchat.conf.bak.$(date +%s)"
-    cp -a "$INSTALL_HOME/Conf/overtchat.conf" "$backup_conf"
-
-    infof "Application de la mise à jour..."
-
-    if ! git reset --hard "origin/$INSTALL_BRANCH"; then
-        err "Échec de la mise à jour. Restauration."
-        git reset --hard HEAD@{1} || true
-        return 1
-    fi
-
-    now=$(date '+%Y-%m-%d %H:%M:%S')
-
-    sed -i \
-        -e "s|^numeric\[\"version\"\]=.*|numeric[\"version\"]=\"$latest_version\"|" \
-        -e "s|^numeric\[\"build\"\]=.*|numeric[\"build\"]=\"$now\"|" \
-        -e "s|^numeric\[\"check\"\]=.*|numeric[\"check\"]=\"$now\"|" \
-        "$INSTALL_HOME/Conf/overtchat.conf"
-
-    ok "Mise à jour terminée vers la version $latest_version"
-    infof "Sauvegarde configuration : $backup_conf"
-
-    return 0
-}
 
 update() {
     local auto=0
@@ -846,9 +562,6 @@ uninstall_git() {
 # Main: parsing & flow
 # -----------------------------
 main() {
-    if ! command_exists git; then
-        err "Git n'est pas installé. Impossible de lancer le programme. Installez 'git'."; exit 1
-    fi
 
     if [[ ${#@} -eq 0 ]]; then
         show_panel

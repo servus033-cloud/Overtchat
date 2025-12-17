@@ -1,0 +1,40 @@
+{
+    "commands": {
+        "install": {
+            "usage": "--install <service|server|all>",
+            "description": "Installe les composants"
+        },
+        "update": {
+            "usage": "--update [-y|--dry-run]",
+            "description": "Met à jour le programme"
+        },
+        "delete": {
+            "usage": "--delete <service|server|all>",
+            "description": "Désinstalle les composants"
+        },
+        "config": {
+            "usage": "--config",
+            "description": "Configuration interactive"
+        },
+        "statut": {
+            "usage": "--statut [--json]",
+            "description": "Affiche l'état du programme"
+        },
+        "help": {
+            "usage": "--help",
+            "description": "Affiche ce message d'aide"
+        },
+        "version": {
+            "usage": "--version",
+            "description": "Affiche la version actuelle du programme"
+        },
+        "log": {
+            "usage": "--log [--tail N]",
+            "description": "Affiche les journaux d'installation"
+        },
+        "init": {
+            "usage": "--init",
+            "description": "Initialise les fichiers de configuration"
+        }
+    }
+}

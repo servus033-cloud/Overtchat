@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+EXPECTED_NAME="overtchat-setup"
+
+# ─── Vérification nom (compatible shc) ───
+if [[ "$(basename -- "$0")" != "$EXPECTED_NAME" ]]; then
+    echo "Nom d'exécutable invalide (attendu : $EXPECTED_NAME)"
+    exit 1
+fi
+
+# ─── Dépendances minimales ───
+need() {
+    command -v "$1" >/dev/null 2>&1 || {
+        echo "Dépendance manquante : $1"
+        exit 1
+    }
+}
+
+need bash
+need curl
+need tar
+need jq
+
+# ─── Variables ───
+TMP_DIR="$(mktemp -d)"
+ARCHIVE_URL="https://github.com/servus033-cloud/overtchat-installer.tar.gz"
+
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
+
+echo "Téléchargement de l’installateur..."
+
+curl -fsSL "$ARCHIVE_URL" -o "$TMP_DIR/overtchat.tar.gz"
+
+echo "Extraction..."
+tar -xzf "$TMP_DIR/overtchat.tar.gz" -C "$TMP_DIR"
+
+INSTALLER="$TMP_DIR/overtchat/installer/install.sh"
+
+if [[ ! -x "$INSTALLER" ]]; then
+    echo "Installateur introuvable ou non exécutable"
+    exit 1
+fi
+
+echo "Lancement de l’installateur..."
+exec "$INSTALLER" "$@"
