@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# Usage : ./setup.sh --install < server | service | all >
-# Usage : ./setup.sh --update < -y >
-# Usage : ./setup.sh --delete < server | service | all >
-# Usage : ./setup.sh --config
-# Usage : ./setup.sh --init
-# Usage : ./setup.sh --help
 
 [[ "$1" == "--debug" ]] && set -xeuo pipefail || {
     set -euo pipefail
@@ -55,14 +49,12 @@ STATE_SERVEUR=0
 STATE_GIT=0
 STATE_CONFIG=0
 
-
 # -----------------------------
 # Helpers
 # -----------------------------
 err() { printf "%b\n" "${refus} $*${NC}" >&2; }
 infof() { printf "%b\n" "${info} $*${NC}"; }
 ok() { printf "%b\n" "${accept} $*${NC}"; }
-
 
 # -----------------------------
 # Pré-requis & self-fix
@@ -163,53 +155,196 @@ validate_email() {
 }
 
 # -----------------------------
-# Affichages (panels)
+# Affichage principal
 # -----------------------------
-affich_panel() {
+show_panel() {
+    local mode="${1:-}"
+
     clear
     cat <<EOF
-                        ${BLUE}───────────────────────────────${NC}
-                        ${BLUE}───     Panel Information   ───${NC}
-                        ${BLUE}───────────────────────────────${NC}
+${BLUE}────────────────────────────────────────────${NC}
+${BLUE}   Panel Information — Service-Overtchat    ${NC}
+${BLUE}────────────────────────────────────────────${NC}
 
+EOF
+
+    if [[ "$mode" == "help" ]]; then
+        show_help
+    else
+        show_commands
+    fi
+}
+
+# -----------------------------
+# Commandes disponibles (court)
+# -----------------------------
+show_commands() {
+    cat <<EOF
 ${YELLOW}Commandes disponibles :${NC}
-    ─ ${GREEN}install${NC}   ( lancer l'installation après configuration )
-    ─ ${MAUVE}config${NC}    ( générer un fichier de configuration avant installation )
-    ─ ${PINK}update${NC}    ( vérifier / appliquer les mises à jour )
-    ─ ${RED}delete${NC}    ( supprimer Service-Overtchat / Serveur-Overtchat )
-    ─ ${YELLOW}init${NC}      ( ré-initialiser le dépôt Git en cas d'anomalie )
-    ─ ${BLUE}help${NC}      ( afficher l'aide )
-    - ${GREEN}statut${NC}   ( permet de voir le statut du programme )
 
-${YELLOW}Syntaxe de commande :${NC}
-    ${GREEN}${0}${NC} < --install 'server / service / all' | --update '-y' | --delete 'server / service / all' | --config | --init | --help | --statut >
+  ${GREEN}install${NC}    Installer Service-Overtchat / Serveur
+  ${MAUVE}config${NC}     Générer le fichier de configuration
+  ${PINK}update${NC}     Vérifier / appliquer les mises à jour
+  ${RED}delete${NC}     Désinstaller Service / Serveur
+  ${YELLOW}init${NC}       Réinitialiser le dépôt Git
+  ${GREEN}statut${NC}     Afficher l'état du programme
+  ${BLUE}help${NC}       Afficher l'aide détaillée
 
+${YELLOW}Syntaxe :${NC}
+  ${GREEN}${0}${NC} <commande> [options]
+
+Tapez ${BLUE}--help${NC} pour plus de détails.
 EOF
 }
 
-affich_help() {
-    cat <<HELP
-                        ${BLUE}───────────────────────${NC}
-                        ${BLUE}───     Panel Help  ───${NC}
-                        ${BLUE}───────────────────────${NC}
+# -----------------------------
+# Aide détaillée
+# -----------------------------
+show_help() {
+    cat <<EOF
+${YELLOW}Aide détaillée — Commandes :${NC}
 
-${YELLOW}Détails des commandes :${NC}
+${GREEN}--install <service | server | all>${NC}
+  Installe Service-Overtchat, le Serveur ou les deux.
 
-${GREEN}Install${NC} : installe Service-Overtchat (et selon option, le serveur aussi).
-${PINK}Update${NC} : met à jour le programme depuis le dépôt Git.
-${RED}Delete${NC} : désinstalle le programme (et selon option, le serveur aussi).
-${MAUVE}Config${NC} : crée un fichier de configuration interactif.
-${YELLOW}Init${NC} : réinitialise le dépôt Git local si nécessaire.
-${BLUE}help${NC} : afficher l'aide générale.
-${GREEN}Statut${NC} : Permet de controler le programme.
+${MAUVE}--config${NC}
+  Lance la configuration interactive et génère les fichiers nécessaires.
 
-${info} : ${0} --install 'server / service / all' | --update '-y' | --delete 'server / service / all' | --config | --init | --help | --statut
+${PINK}--update [-y | --dry-run]${NC}
+  Vérifie et applique les mises à jour depuis le dépôt Git.
+  -y         : mise à jour automatique sans confirmation
+  --dry-run  : simulation sans modification
 
-HELP
+${RED}--delete <service | server | all>${NC}
+  Désinstalle le ou les composants sélectionnés.
+
+${YELLOW}--init${NC}
+  Réinitialise le dépôt Git local en cas de problème.
+
+${GREEN}--statut [--json]${NC}
+  Affiche l'état du programme et des composants.
+
+${BLUE}--help${NC}
+  Affiche cette aide détaillée.
+
+${YELLOW}Exemples :${NC}
+  ${GREEN}${0}${NC} --config
+  ${GREEN}${0}${NC} --install service
+  ${GREEN}${0}${NC} --update -y
+  ${GREEN}${0}${NC} --delete all
+EOF
 }
 
+show_help_install() {
+cat <<EOF
+${GREEN}--install <service | server | all>${NC}
+
+Installe les composants du programme.
+
+  service   Installe Service-Overtchat
+  server    Installe Serveur-Overtchat
+  all       Installe Service + Serveur
+
+Exemples :
+  ${0} --install service
+  ${0} --install all
+EOF
+}
+
+show_help_update() {
+cat <<EOF
+${PINK}--update [-y | --dry-run]${NC}
+
+Met à jour le programme depuis le dépôt Git.
+
+Options :
+  -y           Mise à jour automatique (sans confirmation)
+  --dry-run    Simulation de la mise à jour
+
+Exemples :
+  ${0} --update
+  ${0} --update -y
+  ${0} --update --dry-run
+EOF
+}
+
+show_help_delete() {
+cat <<EOF
+${RED}--delete <service | server | all>${NC}
+
+Désinstalle les composants du programme.
+
+  service   Supprime uniquement Service-Overtchat
+  server    Supprime uniquement Serveur-Overtchat
+  all       Supprime Service + Serveur + dépôt Git
+
+Exemples :
+  ${0} --delete service
+  ${0} --delete all
+EOF
+}
+
+show_help_config() {
+cat <<EOF
+${MAUVE}--config${NC}
+
+Lance la configuration interactive.
+Génère :
+  - config.json (source de vérité)
+  - overtchat.conf (compatibilité Bash)
+
+Exemple :
+  ${0} --config
+EOF
+}
+
+show_help_statut() {
+cat <<EOF
+${GREEN}--statut [--json]${NC}
+
+Affiche l'état du programme.
+
+Options :
+  --json   Sortie machine-lisible (JSON)
+
+Exemples :
+  ${0} --statut
+  ${0} --statut --json
+EOF
+}
+
+show_help_json() {
+cat <<'EOF'
+{
+  "commands": {
+    "install": {
+      "usage": "--install <service|server|all>",
+      "description": "Installe les composants"
+    },
+    "update": {
+      "usage": "--update [-y|--dry-run]",
+      "description": "Met à jour le programme"
+    },
+    "delete": {
+      "usage": "--delete <service|server|all>",
+      "description": "Désinstalle les composants"
+    },
+    "config": {
+      "usage": "--config",
+      "description": "Configuration interactive"
+    },
+    "statut": {
+      "usage": "--statut [--json]",
+      "description": "Affiche l'état du programme"
+    }
+  }
+}
+EOF
+}
+
+
 mess_install() {
-    cat <<'GLOB'
+    cat <<GLOB
 
             ────────────────────────────────────────── ! Informations Générales ! ─────────────────────────────────────────────────────────
 
@@ -634,6 +769,99 @@ get_git_version() {
     echo "${tag#v}"
 }
 
+prompt_input() {
+    local prompt="$1"
+    local default="$2"
+    local regex="$3"
+    local result
+
+    while true; do
+        read -rp "$prompt" result
+        [[ -z "$result" && -n "$default" ]] && result="$default"
+
+        if [[ -z "$regex" || "$result" =~ $regex ]]; then
+            echo "$result"
+            return 0
+        fi
+
+        err "Entrée invalide, veuillez réessayer."
+    done
+}
+
+yn_to_bool() {
+    [[ "$1" =~ ^[Yy]$ ]] && echo 1 || echo 0
+}
+
+get_public_ip() {
+    curl -fs --max-time 3 https://ifconfig.co 2>/dev/null || echo "unknown"
+}
+
+load_json_config() {
+    CONFIG_JSON="$INSTALL_HOME/Conf/config.json"
+
+    if [[ ! -f "$CONFIG_JSON" ]]; then
+        err "Configuration JSON introuvable"
+        return 1
+    fi
+
+    service_enabled=$(jq -r '.features.service' "$CONFIG_JSON")
+    server_enabled=$(jq -r '.features.serveur' "$CONFIG_JSON")
+}
+
+delete_with_progress() {
+    local dir="$1"
+
+    [[ ! -d "$dir" ]] && return 0
+
+    mapfile -t items < <(find "$dir" -mindepth 1 2>/dev/null)
+    local total=${#items[@]}
+    (( total == 0 )) && return 0
+
+    infof "Suppression de $dir ($total éléments)..."
+
+    local count=0 percent
+    for item in "${items[@]}"; do
+        rm -rf "$item" 2>/dev/null
+        ((count++))
+        percent=$(( count * 100 / total ))
+        printf "\rProgression : [%-50s] %d%%" \
+            "$(printf '%0.s#' $(seq 1 $((percent / 2))))" "$percent"
+    done
+    printf "\n"
+
+    rm -rf "$dir" 2>/dev/null
+}
+
+uninstall_service() {
+    infof "Désinstallation Service-Overtchat..."
+
+    [[ -d "$INSTALL_HOME" ]] || {
+        warn "Service-Overtchat non présent"
+        return 0
+    }
+
+    delete_with_progress "$INSTALL_HOME"
+
+    ok "Service-Overtchat désinstallé"
+}
+
+uninstall_server() {
+    infof "Désinstallation Serveur-Overtchat..."
+
+    [[ -d "$INSTALL_SERVER" ]] || {
+        warn "Serveur-Overtchat non présent"
+        return 0
+    }
+
+    delete_with_progress "$INSTALL_SERVER"
+
+    ok "Serveur-Overtchat désinstallé"
+}
+
+uninstall_git() {
+    [[ -d "$INSTALL_TMP" ]] && delete_with_progress "$INSTALL_TMP"
+}
+
 # -----------------------------
 # Main: parsing & flow
 # -----------------------------
@@ -643,7 +871,7 @@ main() {
     fi
 
     if [[ ${#@} -eq 0 ]]; then
-        affich_panel
+        show_panel
         return 0
     fi
 
@@ -679,196 +907,153 @@ main() {
             repair_from_state
         ;;
         --delete)
-            if [[ ! -f "$INSTALL_CONFIG" || ! -d "$INSTALL_HOME" ]]; then
-                err "Programme non installé"; return 1
+            if [[ ! -d "$INSTALL_HOME" && ! -d "$INSTALL_SERVER" ]]; then
+                err "Aucun composant installé"
+                return 1
             fi
-            if [[ "$2" == "server" ]] && mode="1" || [[ "$2" == "service" ]] && mode="2" || [[ "$2" == "all" ]] && mode="3"; then
-                delete_with_progress() {
-                    local dir="$1"
-                
-                    # Récupère tous les fichiers/dossiers récursivement
-                    mapfile -t items < <(find "$dir" -mindepth 1)
-                    local total=${#items[@]}
-                    (( total == 0 )) && return
 
-                    printf "%s\n" "Désinstallation de $dir ($total éléments)..."
-                    local count=0
-                    for item in "${items[@]}"; do
-                        rm -rf "$item" 2>/dev/null
-                        ((count++))
-                        percent=$(( count * 100 / total ))
-                        printf "\rProgression : [%-50s] %d%%" "$(printf '%0.s#' $(seq 1 $((percent / 2))))" "$percent"
-                    done
-                    printf "\n"
+            load_json_config || return 1
 
-                    # Supprime le dossier racine après avoir vidé son contenu
-                    rm -rf "$dir" 2>/dev/null
-                }
+            target="${2:-}"
 
-                while true; do
-                    case "$mode" in
-                        1)
-                            # Uninstall Serveur
-                            printf "%s\n" "Attention : Cette action supprimera entièrement Serveur-Overtchat et toutes ses données associées."
-                            if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
-                                printf "%s\n" "Annulation de la désinstallation"
-                                exit 0
-                            fi
+            case "$target" in
+                server)
+                    info "Cette action supprimera Serveur-Overtchat"
+                    prompt_yn "Confirmez-vous la désinstallation ? (Y/N) : " || exit 0
 
-                            # Supprimer les dossiers
-                            [[ -d "$INSTALL_SERVER" ]] && delete_with_progress "$INSTALL_SERVER"
-                            
-                            printf "%s\n" "Serveur-Overtchat a été désinstallé avec succès."
-                            printf "%s\n" "Merci d'avoir utilisé Serveur-Overtchat by SerVuS"
-                            printf "%s\n" "Pour nous retrouver : http://service.overtchat.free.fr"
-                            exit 0
-                            infof "Suppression non implémentée dans cette version."
-                        ;;
-                        2)
-                            # Uninstall Overtchat
-                            printf "%s\n" "Attention : Cette action supprimera entièrement Service-Overtchat et toutes ses données associées."
-                            if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
-                                printf "%s\n" "Annulation de la désinstallation"
-                                exit 0
-                            fi
+                    uninstall_server
+                ;;
 
-                            # Supprimer les dossiers
-                            [[ -d "$INSTALL_HOME" ]] && delete_with_progress "$INSTALL_HOME"
+                service)
+                    info "Cette action supprimera Service-Overtchat"
+                    prompt_yn "Confirmez-vous la désinstallation ? (Y/N) : " || exit 0
 
-                            printf "%s\n" "Service-Overtchat a été désinstallé avec succès."
-                            printf "%s\n" "Merci d'avoir utilisé Service-Overtchat by SerVuS"
-                            printf "%s\n" "Pour nous retrouver : http://service.overtchat.free.fr"
-                            exit 0
-                            infof "Suppression non implémentée dans cette version."
-                        ;;
-                        3)
-                            # Uninstall All
-                            printf "%s\n" "Attention : Cette action supprimera entièrement Service-Overtchat + Serveur-Overtchat ( si existant ) et toutes leurs données associées."
-                            if ! prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : "; then
-                                printf "%s\n" "Annulation de la désinstallation"
-                                exit 0
-                            fi
+                    uninstall_service
+                ;;
 
-                            # Scan des dossiers existants
-                            [[ -d "$INSTALL_HOME" ]] && delete_with_progress "$INSTALL_HOME" || {
-                                err "Dossier $INSTALL_HOME inexistant"
-                            }
-                            [[ -d "$INSTALL_TMP" ]] && delete_with_progress "$INSTALL_TMP" || {
-                                err "Dépot Git inexistant"
-                            }
-                            [[ -d "$INSTALL_SERVER" ]] && delete_with_progress "$INSTALL_SERVER" || {
-                                err "Dossier $HOME_SERVER inexistant"
-                            }
+                all)
+                    info "Cette action supprimera Service + Serveur (si présents)"
+                    prompt_yn "Confirmez-vous la désinstallation complète ? (Y/N) : " || exit 0
 
-                            printf "%s\n" "L'ensemble du programme a été désinstallé avec succès."
-                            printf "%s\n" "Merci d'avoir utilisé le programme Service-Overtchat by SerVuS"
-                            printf "%s\n" "Pour nous retrouver : http://service.overtchat.free.fr"
-                            exit 0
-                            infof "Suppression non implémentée dans cette version."
-                        ;;
-                        *)
-                            printf "%s\n" "$info Syntaxe : $0 delete < server | service | all >"; return 1 ;;
-                    esac
-                done
-            fi
+                    uninstall_service
+                    uninstall_server
+                    uninstall_git
+                ;;
+
+                *)
+                    err "Syntaxe : $0 --delete <server|service|all>"
+                    return 1
+                ;;
+            esac
+
+            ok "Désinstallation terminée"
         ;;
         --config)
-            # ─── Fonction générique pour lire une saisie ───
-            prompt_input() {
-                local prompt="$1"
-                local default="$2"
-                local validator="$3"
-                local result
+            CONFIG_JSON="$INSTALL_HOME/Conf/config.json"
+            LEGACY_CONF="$INSTALL_CONFIG"
 
-                while true; do
-                    read -rp "$prompt" result
-                    # Si vide, prendre la valeur par défaut
-                    if [[ -z "$result" && -n "$default" ]]; then
-                        result="$default"
-                        echo "$result"
-                        break
-                    fi
-                    # Validation si fournie
-                    if [[ -z "$validator" || $result =~ $validator ]]; then
-                        echo "$result"
-                        break
-                    else
-                        err "Entrée invalide, veuillez réessayer."
-                    fi
-                done
-            }
-
-            # ─── Vérification si une configuration existe ───
-            if [[ -f "$INSTALL_CONFIG" ]]; then
+            # ─── Vérification config existante ───
+            if [[ -f "$CONFIG_JSON" || -f "$LEGACY_CONF" ]]; then
                 err "Une configuration existe déjà."
                 prompt_continue
-                infof "Remplacement du fichier config ..."
+                infof "Remplacement de la configuration..."
             fi
 
-            # ─── Gestion email user ───
-            mail=$(prompt_input "$quest Veuillez enregistrer un email valide : " "" "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+            # ─── Saisies utilisateur ───
+            mail=$(prompt_input \
+                "$quest Veuillez enregistrer un email valide : " \
+                "" \
+                "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 
-            # ─── Gestion chemin d'installation ───
-            load_source=$(prompt_input "$quest Définir un chemin d'installation par défaut ( $HOME/ ) : " "$HOME" "^$HOME/.*")
+            load_source=$(prompt_input \
+                "$quest Définir un chemin d'installation par défaut ($HOME/) : " \
+                "$HOME" \
+                "^$HOME(/.*)?$")
 
-            # ─── Gestion auto-mail ───
-            automail_input=$(prompt_input "$quest Souhaitez-vous activer la gestion auto des emails ? (Y/N) : " "Y" "^[YyNn]$")
-            if [[ $automail_input =~ ^[Yy]$ ]]; then
-                automail=1
-            else
-                automail=0
-            fi
+            automail=$(yn_to_bool "$(prompt_input \
+                "$quest Activer la gestion auto des emails ? (Y/N) : " \
+                "Y" \
+                "^[YyNn]$")")
 
-            # ─── Gestion dépendance Git ───
-            git_input=$(prompt_input "$quest Souhaitez-vous dépendre du dépôt Git (réservé au développeur) ? (Y/N) : " "Y" "^[YyNn]$")
-            if [[ $git_input =~ ^[Yy]$ ]]; then
-                git=1
-            else
-                git=0
-            fi
+            gitdep=$(yn_to_bool "$(prompt_input \
+                "$quest Dépendre du dépôt Git (dev) ? (Y/N) : " \
+                "Y" \
+                "^[YyNn]$")")
 
-            # ─── Gestion Sendmail ───
-            if [[ "$automail" -eq 1 ]]; then
-                # envoie les infos à l'API pour qu'elle envoie l'email
-                public_ip=$(curl -fs --max-time 3 https://ifconfig.co 2>/dev/null || echo 'unknown')
+            # ─── Infos système ───
+            hostname_fqdn=$(hostname -f 2>/dev/null || hostname)
+            local_ip=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "null")
+            public_ip=$(get_public_ip)
 
-                # Envoie les infos à l'API pour qu'elle envoie l'email
-                public_ip=$(curl -fs --max-time 3 https://ifconfig.co 2>/dev/null || echo 'unknown')
+            mkdir -p "$(dirname "$CONFIG_JSON")"
 
-                curl -s -X POST "http://service.overtchat.free.fr/api/api.php" \
-                -H "Content-Type: application/json" \
-                -H "X-API-KEY: $API_KEY" \
-                -d "{
-                        \"email\": \"$mail\",
-                        \"hostname\": \"$(hostname)\",
-                        \"public_ip\": \"$public_ip\",
-                        \"script_version\": \"1.0.0\",
-                        \"status\": \"Configuration validée\"
-                    }" >/dev/null
+            # ─── Écriture JSON (SOURCE DE VÉRITÉ) ───
+            cat > "$CONFIG_JSON" <<EOF
+        {
+            "setup": true,
+            "config": true,
 
-                if [[ $? -ne 0 ]]; then
-                    err "Impossible d'envoyer la configuration à l'API."
-                fi
-            fi
+            "features": {
+                "git": $gitdep,
+                "automail": $automail,
+                "service": false,
+                "serveur": false
+            },
 
-cat > "$INSTALL_CONFIG" <<EOF
-setup=1
-config=1
-git=${git}
-serveur=0
-service=0
-automail=${automail}
+            "user": {
+                "name": "$USER",
+                "home": "$HOME",
+                "email": "$mail"
+            },
 
-# info utilisateur
-name=$USER
-home=$HOME
-hostname=$(hostname -f 2>/dev/null || hostname)
-ip=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "null")
-mail=${mail}
-load_source=${load_source}
+            "system": {
+                "hostname": "$hostname_fqdn",
+                "local_ip": "$local_ip",
+                "public_ip": "$public_ip"
+            },
+
+            "install": {
+                "load_source": "$load_source"
+            }
+        }
+        EOF
+
+            chmod 600 "$CONFIG_JSON"
+            ok "Configuration JSON enregistrée"
+
+            # ─── Génération conf legacy (compatibilité Bash) ───
+            cat > "$LEGACY_CONF" <<EOF
+        setup=1
+        config=1
+        git=$gitdep
+        serveur=0
+        service=0
+        automail=$automail
+
+        name=$USER
+        home=$HOME
+        hostname=$hostname_fqdn
+        ip=$local_ip
+        mail=$mail
+        load_source=$load_source
 EOF
-            chmod 600 "$INSTALL_CONFIG"
-            infof "Vous venez de valider la configuration. Lancez: $0 --install"
+
+            chmod 600 "$LEGACY_CONF"
+
+            # ─── Notification API ───
+            if [[ "$automail" -eq 1 ]]; then
+                curl -s -X POST "http://service.overtchat.free.fr/api/api.php" \
+                    -H "Content-Type: application/json" \
+                    -H "X-API-KEY: $API_KEY" \
+                    -d "{
+                        \"email\": \"$mail\",
+                        \"hostname\": \"$hostname_fqdn\",
+                        \"public_ip\": \"$public_ip\",
+                        \"status\": \"Configuration validée\"
+                    }" >/dev/null || err "Échec notification API"
+            fi
+
+            infof "Configuration validée. Lancez : $0 --install"
         ;;
         --init)
             if [[ ! -f "$INSTALL_CONFIG" ]]; then
@@ -890,7 +1075,18 @@ EOF
             printf "%s\n" "Dépôt Git initialisé avec succès."
         ;;
         --help)
-            clear; affich_help; ;;
+            case "${2:-}" in
+                install) show_help_install ;;
+                update)  show_help_update ;;
+                delete)  show_help_delete ;;
+                config)  show_help_config ;;
+                statut)  show_help_statut ;;
+                --json)  show_help_json ;;
+                *)       show_panel help ;;
+            esac
+            exit 0
+        ;;
+
         --statut)
             collect_status
             load_expected_state
@@ -905,7 +1101,7 @@ EOF
             check_only && exit 0 || exit 1
         ;;
         *)
-            infof "Commande inconnue. Pour plus d'information: $0 --help"; return 1 ;;
+            show_panel; ;;
     esac
 }
 
@@ -991,6 +1187,9 @@ EOF
 }
 
 render_status_json() {
+    latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+    latest_version="${latest_tag#v}"
+    installed_version=$(get_git_version 2>/dev/null || echo "unknown")
     local ts
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
@@ -1026,6 +1225,12 @@ cat <<EOF
     "config": {
         "present": true,
         "path": "$INSTALL_CONFIG"
+    },
+
+    "version": {
+        "installed": "$installed_version",
+        "latest": "$latest_version",
+        "update_available": $([[ "$installed_version" != "$latest_version" ]] && echo true || echo false)
     },
 
     "global_status": "$(compute_global_status)"
