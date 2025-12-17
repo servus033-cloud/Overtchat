@@ -28,18 +28,36 @@ quest="${YELLOW}Question :${NC}"
 # -----------------------------
 # Variables d'environnement
 # -----------------------------
-INSTALL_TMP="/tmp/.Overtchat"
-INSTALL_BRANCH="main"
-INSTALL_CONFIG="$HOME/.config~overtchat"
-INSTALL_DEFAUT="$HOME"
-INSTALL_HOME="$INSTALL_DEFAUT/Service-Overtchat"
-INSTALL_SERVER="$INSTALL_DEFAUT/Serveur-Overtchat"
-INSTALL_BIN="$INSTALL_HOME/bin/Lib"
-REPO_URL="https://github.com/servus033-cloud/Overtchat.git"
-MAKEFILE="$INSTALL_TMP/Install/MAKEFILE"
-MAKEVAR="release"
 
-API_KEY="44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b"
+# Initialisation Json
+cat > /tmp/overtchat_install_state.json <<'EOF'
+{
+    "service": 0,
+    "serveur": 0,
+    "git": 0
+}
+EOF
+
+# Variables principales pour Json
+cat > /tmp/overtchat_install_var.json <<'EOF'
+{
+    "INSTALL_TMP": /tmp/.Overtchat,
+    "INSTALL_BRANCH": main,
+    "INSTALL_CONFIG": $HOME/.config~overtchat,
+    "INSTALL_DEFAUT": $HOME,
+    "INSTALL_HOME": $INSTALL_DEFAUT/Service-Overtchat,
+    "INSTALL_SERVER": $INSTALL_DEFAUT/Serveur-Overtchat,
+    "INSTALL_BIN": $INSTALL_HOME/bin/Lib,
+    "REPO_URL": https://github.com/servus033-cloud/Overtchat.git,
+    "MAKEFILE": $INSTALL_TMP/Install/MAKEFILE,
+    "MAKEVAR": release,
+    "key_api": "44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b"
+}
+EOF
+eval "$(jq -r 'to_entries|map("export \(.key)=\(.value|tostring)")|.[]' /tmp/overtchat_install_var.json)"
+
+# Nettoyage
+rm -f /tmp/overtchat_install_var.json
 
 # -----------------------------
 # État interne (runtime)
@@ -342,39 +360,6 @@ cat <<'EOF'
 EOF
 }
 
-
-mess_install() {
-    cat <<GLOB
-
-            ────────────────────────────────────────── ! Informations Générales ! ─────────────────────────────────────────────────────────
-
-                     Nous allons procéder à l'installation de votre programme Service-Overtchat pour le bon fonctionnement du programme.
-
-                       Ce script va vérifier que vous avez bien les packages nécessaires d'installés sur votre système.
-                    Ensuite, il va configurer les fichiers de base et les dossiers nécessaires au bon fonctionnement du service.
-                Enfin, il vous proposera de configurer les paramètres essentiels tels que la base de données, le serveur web, et les options de sécurité.
-
-            ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-                              ! Assurez-vous d'avoir les droits administratifs (sudo) pour exécuter ce script. !
-
-                         Tout sera géré automatiquement pour vous faciliter la tâche via Mariadb, Apache2 et PHP.
-                 Si vous ne voulez pas de gestion Mysql/Mariadb, merci de ne pas utiliser ce script et de faire une installation manuelle.
-
-            ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-                                           ! Panel Information Important Service-Overtchat !
-
-                           Service-Overtchat permet le contrôle des paquets nécessaires au bon fonctionnement du programme.
-               Si vous ne possèdez pas de droit ' root ', alors l'installation devra être arrêté, la commande ' sudo ' va être activé demandant vôtre mot de passe root !.
-
-            ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-                                Voulez-vous vraiment lancer l'installation du programme Service-Overtchat ?
-
-GLOB
-}
-
 install_server() {
     # Pré-checks
     if [[ -d "$SERVER_HOME" ]]; then
@@ -421,12 +406,12 @@ install_service() {
 # Installation serveur / service
 # -----------------------------
 setup_serv() {
-    if [[ ${2:-} == "" ]]; then
+    if [[ ${1:-} == "" ]]; then
         err "Veuillez spécifier le composant à installer (service | server | all)."
         return 1
     fi
     while true; do
-        case "$2" in
+        case "$1" in
             service)
                 # ─────────────────────────────
                 # Pré-checks
@@ -441,7 +426,6 @@ setup_serv() {
                     return 1
                 fi
 
-                mess_install
                 prompt_continue
                 infof "Installation du service en cours..."
 
@@ -542,7 +526,6 @@ setup_serv() {
                 fi
             ;;
             server)
-                mess_install
                 prompt_continue
 
                 # Clonage requis si pas déjà présent
@@ -560,7 +543,6 @@ setup_serv() {
                 break
             ;;
             all)
-                mess_install
                 prompt_continue
 
                 infof "Installation complète : Service + Serveur"
@@ -992,54 +974,54 @@ main() {
             mkdir -p "$(dirname "$CONFIG_JSON")"
 
             # ─── Écriture JSON (SOURCE DE VÉRITÉ) ───
-            cat > "$CONFIG_JSON" <<EOF
-        {
-            "setup": true,
-            "config": true,
+cat > "$CONFIG_JSON" <<EOF
+{
+    "setup": true,
+    "config": true,
 
-            "features": {
-                "git": $gitdep,
-                "automail": $automail,
-                "service": false,
-                "serveur": false
-            },
+    "features": {
+        "git": $gitdep,
+        "automail": $automail,
+        "service": false,
+        "serveur": false
+    },
 
-            "user": {
-                "name": "$USER",
-                "home": "$HOME",
-                "email": "$mail"
-            },
+    "user": {
+        "name": "$USER",
+        "home": "$HOME",
+        "email": "$mail"
+    },
 
-            "system": {
-                "hostname": "$hostname_fqdn",
-                "local_ip": "$local_ip",
-                "public_ip": "$public_ip"
-            },
+    "system": {
+        "hostname": "$hostname_fqdn",
+        "local_ip": "$local_ip",
+        "public_ip": "$public_ip"
+    },
 
-            "install": {
-                "load_source": "$load_source"
-            }
-        }
-        EOF
+    "install": {
+        "load_source": "$load_source"
+    }
+}
+EOF
 
             chmod 600 "$CONFIG_JSON"
             ok "Configuration JSON enregistrée"
 
             # ─── Génération conf legacy (compatibilité Bash) ───
-            cat > "$LEGACY_CONF" <<EOF
-        setup=1
-        config=1
-        git=$gitdep
-        serveur=0
-        service=0
-        automail=$automail
+cat > "$LEGACY_CONF" <<EOF
+    setup=1
+    config=1
+    git=$gitdep
+    serveur=0
+    service=0
+    automail=$automail
 
-        name=$USER
-        home=$HOME
-        hostname=$hostname_fqdn
-        ip=$local_ip
-        mail=$mail
-        load_source=$load_source
+    name=$USER
+    home=$HOME
+    hostname=$hostname_fqdn
+    ip=$local_ip
+    mail=$mail
+    load_source=$load_source
 EOF
 
             chmod 600 "$LEGACY_CONF"
