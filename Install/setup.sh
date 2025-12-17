@@ -6,13 +6,6 @@
 
 echo "Initialisation en cours..."
 
-cat <<EOF
-                    Bienvenue sur l'installateur officiel Service-Overtchat.
-                    Ce script va vous guider à travers le processus d'installation et de configuration.
-                        - Pour obtenir toute aide sur l'installateur, exécutez : ./setup.sh --help
-                    L'équipe Service-Overtchat vous remercie de votre confiance !
-EOF
-
 IFS=$'\n\t'
 
 # -----------------------------
@@ -428,6 +421,10 @@ install_service() {
 # Installation serveur / service
 # -----------------------------
 setup_serv() {
+    if [[ ${2:-} == "" ]]; then
+        err "Veuillez spécifier le composant à installer (service | server | all)."
+        return 1
+    fi
     while true; do
         case "$2" in
             service)
