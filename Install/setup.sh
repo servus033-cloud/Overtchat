@@ -29,18 +29,12 @@ quest="${YELLOW}Question :${NC}"
 # Variables d'environnement
 # -----------------------------
 
-# Initialisation Json
-cat > /tmp/overtchat_install_state.json <<'EOF'
-{
-    "service": 0,
-    "serveur": 0,
-    "git": 0
-}
-EOF
-
 # Variables principales pour Json
 cat > /tmp/overtchat_install_var.json <<'EOF'
 {
+    "service": 0,
+    "serveur": 0,
+    "git": 0,
     "INSTALL_TMP": /tmp/.Overtchat,
     "INSTALL_BRANCH": main,
     "INSTALL_CONFIG": $HOME/.config~overtchat,
@@ -51,13 +45,17 @@ cat > /tmp/overtchat_install_var.json <<'EOF'
     "REPO_URL": https://github.com/servus033-cloud/Overtchat.git,
     "MAKEFILE": $INSTALL_TMP/Install/MAKEFILE,
     "MAKEVAR": release,
-    "key_api": "44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b"
+    "key_api": 44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b
 }
 EOF
-eval "$(jq -r 'to_entries|map("export \(.key)=\(.value|tostring)")|.[]' /tmp/overtchat_install_var.json)"
 
-# Nettoyage
-rm -f /tmp/overtchat_install_var.json
+# Export des variables
+if [[ -f "/tmp/overtchat_install_var.json" ]]; then
+    eval "$(jq -r 'to_entries|map("export \(.key)=\(.value|tostring)")|.[]' /tmp/overtchat_install_var.json)"
+
+    # Nettoyage
+    rm -f /tmp/overtchat_install_var.json
+fi
 
 # -----------------------------
 # État interne (runtime)
@@ -121,27 +119,6 @@ prompt_yn() {
             *) printf "%b\n" "${info} Répondez par Y ou N." ;;
         esac
     done
-}
-
-# -----------------------------
-# Chargement configuration
-# -----------------------------
-load_config() {
-    local conf_path
-    conf_path=$(find "$INSTALL_HOME/Conf" -type f -name "overtchat.conf" -print -quit 2>/dev/null || true)
-
-    if [[ -z "$conf_path" ]]; then
-        err "Fichier de configuration introuvable. Veuillez installer correctement le programme."
-        return 1
-    fi
-
-    # shellcheck disable=SC1090
-    if ! source "$conf_path"; then
-        err "Erreur : le fichier de configuration contient une erreur."
-        return 1
-    fi
-
-    return 0
 }
 
 # -----------------------------
