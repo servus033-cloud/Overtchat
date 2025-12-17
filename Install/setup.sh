@@ -35,25 +35,28 @@ cat > /tmp/overtchat_install_var.json <<'EOF'
     "service": 0,
     "serveur": 0,
     "git": 0,
-    "INSTALL_TMP": /tmp/.Overtchat,
-    "INSTALL_BRANCH": main,
-    "INSTALL_CONFIG": $HOME/.config~overtchat,
-    "INSTALL_DEFAUT": $HOME,
-    "INSTALL_HOME": $INSTALL_DEFAUT/Service-Overtchat,
-    "INSTALL_SERVER": $INSTALL_DEFAUT/Serveur-Overtchat,
-    "INSTALL_BIN": $INSTALL_HOME/bin/Lib,
-    "REPO_URL": https://github.com/servus033-cloud/Overtchat.git,
-    "MAKEFILE": $INSTALL_TMP/Install/MAKEFILE,
-    "MAKEVAR": release,
-    "key_api": 44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b
+    "INSTALL_TMP": "/tmp/.Overtchat",
+    "INSTALL_BRANCH": "main",
+    "INSTALL_CONFIG": "$HOME/.config~overtchat",
+    "INSTALL_DEFAUT": "$HOME",
+    "INSTALL_HOME": "$INSTALL_DEFAUT/Service-Overtchat",
+    "INSTALL_SERVER": "$INSTALL_DEFAUT/Serveur-Overtchat",
+    "INSTALL_BIN": "$INSTALL_HOME/bin/Lib",
+    "REPO_URL": "https://github.com/servus033-cloud/Overtchat.git",
+    "MAKEFILE": "$INSTALL_TMP/Install/MAKEFILE",
+    "MAKEVAR": "release",
+    "key_api": "44c63e560d1dab5208bb507c8126cbb5204e569b5b85db0adb67b8fbcaf5755b"
 }
 EOF
 
 # Export des variables
-if [[ -f "/tmp/overtchat_install_var.json" ]]; then
-    eval "$(jq -r 'to_entries|map("export \(.key)=\(.value|tostring)")|.[]' /tmp/overtchat_install_var.json)"
+if [[ -f /tmp/overtchat_install_var.json ]]; then
+    while IFS== read -r key value; do
+        eval "export $key=\"$value\""
+    done < <(
+        jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/overtchat_install_var.json
+    )
 
-    # Nettoyage
     rm -f /tmp/overtchat_install_var.json
 fi
 
@@ -90,6 +93,21 @@ prompt_continue() {
         echo "Abandon."; exit 0
     fi
 }
+
+
+if ! command -v jq &>/dev/null; then
+    err "[ jq ] Package non installé. Souhaité vous l'installé ? ( access root obligatoire ! )" >&2
+    prompt_continue
+    if ! sudo apt-get update; then
+        err "Impossible de charger Update !"
+        exit 1
+    fi
+
+    if ! sudo apt install jq; then
+        err "Impossible d'installer le package"
+        exit 1
+    fi    
+fi
 
 if ! command -v msmtp &>/dev/null; then
     err "[ msmtp ] Package non installé. Souhaité vous l'installé ? ( access root obligatoire ! )" >&2
@@ -155,7 +173,6 @@ validate_email() {
 show_panel() {
     local mode="${1:-}"
 
-    clear
     cat <<EOF
 ${BLUE}────────────────────────────────────────────${NC}
 ${BLUE}   Panel Information — Service-Overtchat    ${NC}
