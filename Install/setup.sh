@@ -6,6 +6,13 @@
 
 echo "Initialisation en cours..."
 
+cat <<EOF
+                    Bienvenue sur l'installateur officiel Service-Overtchat.
+                    Ce script va vous guider à travers le processus d'installation et de configuration.
+                        - Pour obtenir toute aide sur l'installateur, exécutez : ./setup.sh --help
+                    L'équipe Service-Overtchat vous remercie de votre confiance !
+EOF
+
 IFS=$'\n\t'
 
 # -----------------------------
