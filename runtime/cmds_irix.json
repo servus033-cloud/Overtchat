@@ -1,0 +1,74 @@
+{
+    "cmds": [
+        {
+            "grade": {
+                "chan_all": [
+                    "chan_csadmin",
+                    "chan_admin",
+                    "chan_xop"
+                ],
+                "chan_salon": [
+                    "chan_owner",
+                    "chan-master",
+                    "chan-op",
+                    "chan_voice"
+                ]
+            },
+            "desc": "Commande Master IriX",
+            "cmds_list": [
+                {
+                    "cmd": "/msg IriX add [ login ] [ grade ] [mot_de_passe]",
+                    "desc": "Enregistre un utilisateur auprès du système IriX.",
+                    "grade": "csadmin / admin / xop / owner / master / voice",
+                    "access": "4"
+                },
+                {
+                    "cmd": "/msg IriX del [ login ] [mot_de_passe]",
+                    "desc": "Authentifie un utilisateur auprès du système IriX.",
+                    "access": "1"
+                },
+                {
+                    "cmd": "/msg IriX auth [ login ] [mot_de_passe]",
+                    "desc": "Authentifie un utilisateur auprès du système IriX.",
+                    "access": "1"
+                },
+                {
+                    "cmd": "/msg IriX deauth [ login ] [mot_de_passe]",
+                    "desc": "Authentifie un utilisateur auprès du système IriX.",
+                    "access": "1"
+                },
+                {
+                    "cmd": "/msg IriX status",
+                    "desc": "Affiche le statut actuel du système IriX.",
+                    "access": "4"
+                },
+                {
+                    "cmd": "/msg IriX userslist",
+                    "desc": "Liste tous les utilisateurs configurés dans IriX.",
+                    "access": "3"
+                },
+                {
+                    "cmd": "/msg IriX add [ salon ] [ owner ] [mot_de_passe]",
+                    "desc": "Enregistre un nouveau salon avec son owner dans IriX.",
+                    "access": "3"
+                },
+                {
+                    "cmd": "/msg IriX del [ salon ] [mot_de_passe]",
+                    "desc": "Supprime un salon dans IriX.",
+                    "access": "3"
+                },
+                {
+                    "cmd": "/msg IriX suspend [ salon ] [mot_de_passe]",
+                    "desc": "Suspend un salon de tout les access dans IriX.",
+                    "access": "3"
+                }
+            ]
+        }
+    ],
+    "csadmin": "",
+    "admin": "",
+    "xop": "",
+    "owner": "",
+    "master": "",
+    "voice": ""
+}

@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+if [[ "$1" == "--debug" ]]; then
+    set -x
+    shift
+else
+    export PS4='+ [${BASH_SOURCE}:${LINENO}] '
+fi
+
+set -euo pipefail
+
+# Chemins
+OVERTCHAT_HOME="$HOME/Overtchat"
+RUNTIME_DIR="$OVERTCHAT_HOME/runtime"
+INSTALLER="$OVERTCHAT_HOME/installer"
+BUILDER="$OVERTCHAT_HOME/builder"
+CONFIG_DIR="$OVERTCHAT_HOME/config"
+LOG_DIR="$CONFIG_DIR/logs"
+PATHS_JSON="$CONFIG_DIR/defaults.json"
+
+# code couleur AINSI
+valid() {
+    echo -e "\033[1;32m$*\033[0m"
+}
+error() {
+    echo -e "\033[1;31m$*\033[0m"
+}
+info() {
+    echo -e "\033[1;34m$*\033[0m"
+}
+warning() {
+    echo -e "\033[1;33m$*\033[0m"
+}
+
+# On controle que l'installateur n'est pas lancé en root ou sur un systeme non linux #
+if [[ "$(id -u)" -eq 0 || "$(uname)" != "Linux" ]]; then
+    error "Détection : Vous venez de lancer le programme en mode [ non-compatible ]. \
+    Veuillez ne pas exécuter cet installateur en tant que root \
+    ou \
+    sur un système non-Linux."
+    exit 1
+else
+    valid "Détection : Vous venez de lancer le programme en mode [ compatible ]"
+    sleep 2
+    clear
+fi
+
+# On controle la base de l'installateur avant de continuer #
+if ! command -v jq &> /dev/null; then
+    error "Détection : jq n'est pas installé. \
+    Veuillez installer jq pour continuer."
+    warning "Tentative de lancement du mode < sudo >"; sleep 1
+    sudo apt-get install -y jq; valid "Installation < jq > validé."; sleep 2 || {
+        error "Échec de l'installation de jq. Veuillez l'installer manuellement."
+        exit 1
+    }
+fi
+
+mkdir -p \
+    "$OVERTCHAT_HOME" \
+    "$BUILDER" \
+    "$INSTALLER" \
+    "$RUNTIME_DIR" \
+    "$CONFIG_DIR" \
+    "$LOG_DIR"
+
+bootstrap_repository() {
+    local url branch
+
+    url=$(jq -r '.repository.url' "$DEFAULTS_JSON")
+    branch=$(jq -r '.repository.branch' "$DEFAULTS_JSON")
+
+    [[ -d "$OVERTCHAT_HOME/.git" ]] && return 0
+
+    warning "Bootstrap : récupération des scripts Overtchat"
+
+    git clone --depth 1 -b "$branch" "$url" "$OVERTCHAT_HOME" || {
+        error "Échec du téléchargement du dépôt Overtchat"
+        return 1
+    }
+}
+
+aff_acceuil() {
+cat << "EOF"
+                                            OVERTCHAT INSTALLER by SERVUS
+                                            Edition 2024 Version 1.0.0
+
+            Bienvenue dans l'installateur Overtchat créer par SerVuS gérant de Service-Overtchat.
+
+            Ce programme a pour but de vous proposez divers programmes ( eggdrop/socket/serveur/service-automatisé etc... ) 
+                pour vous permettre de vous simplifiez dans vos connaissance à travers le mode des systêmes Linux.
+
+            Un panel s'offre à vous au lancement vous permettant de choisir les options qui vous plaira.
+
+                                                    Mise en garde : 
+    - Certaine fonctionnalité du programme nécessitera des packages supplémentaires pour le bon fonctionnement. 
+    - Assurez-vous de posséder les droits ' root ' afin de rendre le programme compatible. En cas contraire, le programme ne pourra pas fonctionné.
+
+                    En cas d'erreur ou de dysfonctionnement, merci de le signaler sur : 
+                                        - support.overtchat@free.fr
+
+            Un service de mise à jour est activé par défaut. Si vous souhaitez ne pas en bénéficier, vous pourrez le désactivé via le panel.
+
+                            L'équipe Service-Overtchat vous souhaite la bienvenue sur le programme.
+
+EOF
+}
+
+sleep 3
+
+if [[ ! -f "$PATHS_JSON" ]]; then
+echo "Création du fichier defaults.json"
+cat > "$PATHS_JSON" <<EOF
+{
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/servus033-cloud/Overtchat.git",
+    "branch": "main"
+  },
+
+  "paths": {
+    "base": "$HOME/Overtchat"
+  },
+
+  "packages": {
+    "control": {
+      "path": "builder/control_package.sh"
+    },
+    "install": {
+      "path": "installer/install.sh"
+    },
+    "uninstall": {
+      "path": "installer/uninstall.sh"
+    },
+    "repair": {
+      "path": "installer/repair.sh"
+    },
+    "update": {
+      "path": "installer/update.sh"
+    },
+    "status": {
+      "path": "installer/status.sh"
+    }
+  }
+}
+EOF
+fi
+
+jq empty "$PATHS_JSON" 2>/dev/null || {
+    error "Fichier JSON invalide : $PATHS_JSON"
+    exit 1
+}
+
+run_script() {
+    local name="$1"
+    local rel_path script
+
+    rel_path=$(jq -r ".packages.$name.path" "$PATHS_JSON")
+    script="$OVERTCHAT_HOME/$rel_path"
+
+    if [[ ! -f "$script" ]]; then
+        warning "Script manquant : $script"
+        bootstrap_repository || return 1
+    fi
+
+    [[ ! -f "$script" ]] && {
+        error "Script toujours introuvable après bootstrap"
+        return 1
+    }
+
+    chmod +x "$script" 2>/dev/null || true
+    bash "$script"
+}
+
+handle_choice() {
+    local action="$1"
+
+    if ! run_script "$action"; then
+        warning "Détection : Aucun programme n'a été détecté..."
+    fi
+}
+
+# affiche le message de bienvenue
+aff_acceuil
+
+# affiche le panel
+while true; do
+cat << "EOF"
+
+                1) Quitter      2) Control      3) Install      4) Uninstall        5) Init         6) Update       7) Statut
+
+EOF
+    read -rp "Quel option souhaitez-vous choisir ? : " option
+        choix="$option"
+
+    case "$choix" in
+    1) warning "Arrêt du programme"; sleep 2; exit 0 ;;
+    2) handle_choice "control" ;;
+    3) handle_choice "install" ;;
+    4) handle_choice "uninstall" ;;
+    5) handle_choice "repair" ;;
+    6) handle_choice "update" ;;
+    7) handle_choice "status" ;;
+    *) warning "Choix invalide"; sleep 1 ;;
+    esac
+done

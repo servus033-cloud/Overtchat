@@ -1,0 +1,13 @@
+{
+    "irix": {
+        "online": false,
+        "database": {
+            "robot": "irix",
+            "type": "unix",
+            "function": "robotic operating system by Service-Overtchat",
+            "socket": "/var/run/irix.sock",
+            "version": "2.2.0",
+            "home": "$OVERTCHAT_HOME/components/service/bin/IriX"
+        }
+    }
+}

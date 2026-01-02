@@ -1,0 +1,24 @@
+{
+    "components": {
+        "service": {
+            "installed": false,
+            "ok": false,
+            "last_action": null
+        },
+        "server": {
+            "installed": false,
+            "ok": false,
+            "last_action": null
+        }
+    },
+    "builder": {
+        "last_build": null
+    },
+    "root": {
+        "actived": null
+    },
+    "user": {
+        "mode": true,
+        "root": false
+    }
+}

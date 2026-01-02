@@ -1,0 +1,30 @@
+{
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/servus033-cloud/Overtchat.git",
+        "branch": "main"
+    },
+    "paths": {
+        "base": "$HOME/Overtchat"
+    },
+    "packages": {
+        "control": {
+            "path": "builder/control_package.sh"
+        },
+        "install": {
+            "path": "installer/install.sh"
+        },
+        "uninstall": {
+            "path": "installer/uninstall.sh"
+        },
+        "repair": {
+            "path": "installer/repair.sh"
+        },
+        "update": {
+            "path": "installer/update.sh"
+        },
+        "status": {
+            "path": "installer/status.sh"
+        }
+    }
+}

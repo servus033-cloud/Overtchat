@@ -1,0 +1,12 @@
+{
+    "name": "Service-Overtchat",
+    "version": "1.0.0",
+    "requires": {
+        "build": true
+    },
+    "paths": {
+        "home": "install.service.home",
+        "bin": "install.service.bin",
+        "conf": "install.service.conf"
+    }
+}

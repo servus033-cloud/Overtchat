@@ -1,0 +1,75 @@
+{
+    "install": {
+        "home": "~/Overtchat",
+        "uid": "user",
+        "sudo": false,
+        "lang": "fr",
+        "copyright": "© 2024 Service-Overtchat"
+    },
+    "irix": {
+        "online": false,
+        "database": {
+            "robot": "irix",
+            "type": "unix",
+            "function": "robotic operating system by Service-Overtchat",
+            "socket": "/var/run/irix.sock",
+            "version": "2.2.0",
+            "namebase": "Overtchat/IriX"
+        },
+        "install": {
+            "script": "~/Overtchat/installer/installirix.sh"
+        },
+        "path": "~/Overtchat/config/irix.json",
+        "cmdsbot": "~/Overtchat/runtime/cmds_irix.json"
+    },
+    "bootstrap": {
+        "install": "~/Overtchat/bootstrap/overtchat-setup"
+    },
+    "builder": {
+        "build": "~/Overtchat/builder/build.sh",
+        "build_json": "~/Overtchat/builder/build.json",
+        "encrypt": "~/Overtchat/builder/encrypt.sh",
+        "makefile": "~/Overtchat/builder/MAKEFILE",
+        "package": "~/Overtchat/builder/package.sh"
+    },
+    "components": {
+        "service": {
+            "home": "~/Overtchat/components/service",
+            "bin": "~/Overtchat/components/service/bin",
+            "lib": "~/Overtchat/components/service/lib",
+            "conf": "~/Overtchat/components/service/conf",
+            "egg": "~/Overtchat/components/service/conf/eggdrop.conf"
+        },
+        "server": {
+            "home": "~/Overtchat/components/server",
+            "bin": "~/Overtchat/components/server/bin",
+            "conf": "~/Overtchat/components/server/conf"
+        }
+    },
+    "config": {
+        "config": "~/Overtchat/config/config.json",
+        "defaults": "~/Overtchat/config/defaults.json",
+        "irix": "~/Overtchat/config/irix.json",
+        "paths": "~/Overtchat/config/paths.json",
+        "schema": "~/Overtchat/config/schema.json"
+    },
+    "installer": {
+        "config": "~/Overtchat/installer/config.sh",
+        "install": "~/Overtchat/installer/install.sh",
+        "installirix": "~/Overtchat/installer/installirix.sh",
+        "preflight": "~/Overtchat/installer/preflight.sh",
+        "repair": "~/Overtchat/installer/repair.sh",
+        "state": "~/Overtchat/installer/state.sh",
+        "status": "~/Overtchat/installer/status.sh",
+        "ui": "~/Overtchat/installer/ui.sh",
+        "uninstall": "~/Overtchat/installer/uninstall.sh",
+        "update": "~/Overtchat/installer/update.sh"
+    },
+    "runtime": {
+        "state": "~/Overtchat/runtime/state.json",
+        "version": "~/Overtchat/runtime/version.json",
+        "logs": "~/Overtchat/runtime/logs",
+        "irixlogs": "~/Overtchat/runtime/irix~tmp.log",
+        "irix": "~/Overtchat/runtime/cmds_irix.json"
+    }
+}
